@@ -2894,9 +2894,9 @@ void SpriteCB_BounceConfirmCancelButton(u8 spriteId, u8 spriteId2, u8 animNum)
 
 static void LoadPartyMenuPokeballGfx(void)
 {
-    LoadCompressedSpriteSheet(&sSpriteSheet_MenuPokeball);
+    LoadSpriteSheet(&sSpriteSheet_MenuPokeball);
     LoadCompressedSpriteSheet(&sSpriteSheet_MenuPokeballSmall);
-    LoadCompressedSpritePalette(&sSpritePalette_MenuPokeball);
+    LoadSpritePalette(&sSpritePalette_MenuPokeball);
 }
 
 static void CreatePartyMonStatusSprite(struct Pokemon *mon, struct PartyMenuBox *menuBox)

@@ -755,14 +755,19 @@ static const union AnimCmd *const sSpriteAnimTable_MenuPokeball[] =
     sPokeballAnim_Open,
 };
 
-static const struct CompressedSpriteSheet sSpriteSheet_MenuPokeball =
+#define B_INTERFACE_GFX_BALL_CAUGHT 70
+
+static const struct SpriteSheet sSpriteSheet_MenuPokeball =
 {
-    gPartyMenuPokeball_Gfx, 0x400, 0x04b0
+    gBattleInterface_Gfx + B_INTERFACE_GFX_BALL_CAUGHT,
+    1 * TILE_SIZE_4BPP,
+    0x04b0
 };
 
-const struct CompressedSpritePalette sSpritePalette_MenuPokeball =
+const struct SpritePalette sSpritePalette_MenuPokeball =
 {
-    gPartyMenuPokeball_Pal, 0x04b0
+    gBattleInterface_Healthbar_Pal,
+    0x04b0
 };
 
 // Used for the pokeball sprite on each party slot / Cancel button

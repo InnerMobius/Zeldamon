@@ -270,8 +270,10 @@ void DestroyOverworldHud(void)
 static void Task_OverworldHud(u8 taskId)
 {
     u8 i;
+	struct Pokemon *mon = &gPlayerParty[0];
+    u16 species = GetMonData(mon, MON_DATA_SPECIES);
 
-    if (ShouldShowOverworldHud())
+    if (ShouldShowOverworldHud() && species != SPECIES_NONE)
     {
         sOverworldHud.visible = TRUE;
 
@@ -346,40 +348,20 @@ static void DestroyHudSprites(void)
             DestroySpriteAndFreeResources(&gSprites[sOverworldHud.hpBarSpriteIds[i]]);
 }
 
-static bool8 ShouldShowOverworldHud(void)
+bool8 CanShowOverworldHud(void)
 {
-    if (ArePlayerFieldControlsLocked())
-        return FALSE;
-
-    if (!IsFieldMessageBoxHidden())
-        return FALSE;
-
-    if (FuncIsActiveTask(Task_StartMenuHandleInput))
-        return FALSE;
-
-    if (gBagMenuState.bagOpen)
-        return FALSE;
-
-    if (FuncIsActiveTask(Task_HandleChooseMonInput))
-        return FALSE;
-
-    if (gQuestLogState == QL_STATE_PLAYBACK)
-        return FALSE;
-
-    return TRUE;
+    return ShouldShowOverworldHud();
 }
 
 static void UpdateHud(void)
 {
-    struct Pokemon *mon;
+    struct Pokemon *mon = &gPlayerParty[0];
     u8 buf[POKEMON_NAME_LENGTH + 1];
     u16 species;
     u8 i;
 
     if (!sOverworldHud.visible)
         return;
-
-    mon = &gPlayerParty[0];
 
     species = GetMonData(mon, MON_DATA_SPECIES);
     if (species == SPECIES_NONE)

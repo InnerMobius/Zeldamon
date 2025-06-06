@@ -2109,7 +2109,9 @@ static void ResumeMap(bool32 inLink)
     ResumePausedWeather();
     if (!inLink)
         SetUpFieldTasks();
-    CreateOverworldHud();
+
+    if (CanShowOverworldHud())
+        CreateOverworldHud();
 	RunOnResumeMapScript();
 }
 

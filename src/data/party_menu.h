@@ -760,13 +760,13 @@ static const struct CompressedSpriteSheet sSpriteSheet_MenuPokeball =
     gPartyMenuPokeball_Gfx, 0x400, 0x04b0
 };
 
-static const struct CompressedSpritePalette sSpritePalette_MenuPokeball =
+const struct CompressedSpritePalette sSpritePalette_MenuPokeball =
 {
     gPartyMenuPokeball_Pal, 0x04b0
 };
 
 // Used for the pokeball sprite on each party slot / Cancel button
-static const struct SpriteTemplate sSpriteTemplate_MenuPokeball =
+const struct SpriteTemplate sSpriteTemplate_MenuPokeball =
 {
     .tileTag = 0x04b0,
     .paletteTag = 0x04b0,
@@ -841,13 +841,13 @@ static const union AnimCmd *const sSpriteAnimTable_MenuPokeballSmall[] =
     sSmallPokeballAnim_Blank4,
 };
 
-static const struct CompressedSpriteSheet sSpriteSheet_MenuPokeballSmall =
+const struct CompressedSpriteSheet sSpriteSheet_MenuPokeballSmall =
 {
     gPartyMenuPokeballSmall_Gfx, 0x0300, 0x04b1
 };
 
 // Used for the pokeball sprite next to Cancel and Confirm when both are present, otherwise sSpriteTemplate_MenuPokeball is used
-static const struct SpriteTemplate sSpriteTemplate_MenuPokeballSmall =
+const struct SpriteTemplate sSpriteTemplate_MenuPokeballSmall =
 {
     .tileTag = 1201,
     .paletteTag = 1200,

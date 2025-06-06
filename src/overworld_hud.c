@@ -1,10 +1,13 @@
 #include "global.h"
 #include "gflib.h"
+#include "decompress.h"
 #include "pokemon_icon.h"
 #include "money.h"
 #include "item_menu_icons.h"
 #include "overworld.h"
 #include "overworld_hud.h"
+#include "task.h"
+#include "party_menu.h"
 #include "constants/items.h"
 
 struct OverworldHud
@@ -27,8 +30,6 @@ static void UpdateHud(void);
 
 void CreateOverworldHud(void)
 {
-    if (FuncIsActiveTask(Task_OverworldHud))
-        return;
 
     static const struct WindowTemplate sNameWindow = {
         .bg = 0,
@@ -57,6 +58,9 @@ void CreateOverworldHud(void)
         .paletteNum = 15,
         .baseBlock = 0x230
     };
+
+    if (FuncIsActiveTask(Task_OverworldHud))
+        return;
 
     sOverworldHud.pokemonNameWindowId = AddWindow(&sNameWindow);
     sOverworldHud.moneyWindowId = AddWindow(&sMoneyWindow);

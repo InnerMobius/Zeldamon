@@ -16,6 +16,7 @@
 	.include "src/trade_scene.o"
 	.include "src/new_game.o"
 	.include "src/overworld.o"
+	.include "src/overworld_hud.o"
 	.include "src/fieldmap.o"
 	.include "src/field_camera.o"
 	.include "src/field_player_avatar.o"

@@ -47,6 +47,7 @@
 #include "trainer_pokemon_sprites.h"
 #include "vs_seeker.h"
 #include "wild_encounter.h"
+#include "overworld_hud.h"
 #include "constants/cable_club.h"
 #include "constants/event_objects.h"
 #include "constants/maps.h"
@@ -1367,7 +1368,8 @@ static void InitOverworldBgs_NoResetHeap(void)
 
 void CleanupOverworldWindowsAndTilemaps(void)
 {
-    FreeAllOverworldWindowBuffers();
+    DestroyOverworldHud();
+	FreeAllOverworldWindowBuffers();
     Free(gBGTilemapBuffers3);
     Free(gBGTilemapBuffers1);
     Free(gBGTilemapBuffers2);
@@ -2107,7 +2109,8 @@ static void ResumeMap(bool32 inLink)
     ResumePausedWeather();
     if (!inLink)
         SetUpFieldTasks();
-    RunOnResumeMapScript();
+    CreateOverworldHud();
+	RunOnResumeMapScript();
 }
 
 static void InitObjectEventsLink(void)

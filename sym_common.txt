@@ -11,6 +11,7 @@
 	.include "random.o"
 	.include "load_save.o"
 	.include "overworld.o"
+	.include "overworld_hud.o"
 	.align 4
 	.include "fieldmap.o"
 	.align 4

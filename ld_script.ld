@@ -95,6 +95,7 @@ SECTIONS {
         src/play_time.o(.text);
         src/new_game.o(.text);
         src/overworld.o(.text);
+		src/overworld_hud.o(.text);
         src/fieldmap.o(.text);
         src/metatile_behavior.o(.text);
         src/field_camera.o(.text);
@@ -425,6 +426,7 @@ SECTIONS {
         src/battle_interface.o(.rodata);
         src/pokeball.o(.rodata);
         src/trade.o(.rodata);
+		src/overworld_hud.o(.rodata);
         src/trade_scene.o(.rodata);
         src/overworld.o(.rodata);
         src/tilesets.o(.rodata);

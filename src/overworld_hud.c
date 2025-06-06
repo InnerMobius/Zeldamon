@@ -14,6 +14,7 @@
 #include "script.h"
 #include "start_menu.h"
 #include "item_menu.h"
+#include "berry_pouch.h"
 #include "overworld_hud.h"
 #include "task.h"
 #include "party_menu.h"
@@ -337,7 +338,11 @@ static void DestroyHudSprites(void)
 {
     u8 i;
     if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
-        DestroySpriteAndFreeResources(&gSprites[sOverworldHud.itemIconSpriteId]);
+    {
+        DestroySprite(&gSprites[sOverworldHud.itemIconSpriteId]);
+        FreeSpriteTilesByTag(TAG_HUD_ITEM_ICON_TILE);
+        FreeSpritePaletteByTag(TAG_HUD_ITEM_ICON_PAL);
+    }
 
     for (i = 0; i < PARTY_SIZE; i++)
         if (sOverworldHud.pokeballSpriteIds[i] != SPRITE_NONE)
@@ -478,6 +483,12 @@ static bool8 ShouldShowOverworldHud(void)
         return FALSE;
 
     if (gBagMenuState.bagOpen)
+        return FALSE;
+
+    if (FuncIsActiveTask(Task_ReturnToBagFromContextMenu))
+        return FALSE;
+
+    if (FuncIsActiveTask(Task_BerryPouch_DestroyDialogueWindowAndRefreshListMenu))
         return FALSE;
 
     if (FuncIsActiveTask(Task_HandleChooseMonInput))

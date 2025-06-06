@@ -3,6 +3,7 @@
 #include "decompress.h"
 #include "battle_interface.h"
 #include "pokemon_icon.h"
+#include "pokemon.h"
 #include "money.h"
 #include "item_menu_icons.h"
 #include "graphics.h"
@@ -22,6 +23,9 @@
 #define TAG_OVERWORLD_BALL_TILE 55062
 #define TAG_OVERWORLD_BALL_PAL  55063
 #define B_INTERFACE_GFX_BALL_CAUGHT 70
+#define B_INTERFACE_GFX_HP_BAR_GREEN 3
+#define B_INTERFACE_GFX_HP_BAR_YELLOW 47
+#define B_INTERFACE_GFX_HP_BAR_RED 56
 
 // Sprite tag values used exclusively by the overworld HUD
 #define TAG_HUD_POKEBALL_TILE       0xE500
@@ -29,6 +33,9 @@
 #define TAG_HUD_POKEBALL_PAL        0xE502
 #define TAG_HUD_ITEM_TILE           0xE503
 #define TAG_HUD_ITEM_PAL            0xE504
+// Dedicated tags for the registered item icon
+#define TAG_HUD_ITEM_ICON_TILE      0xE505
+#define TAG_HUD_ITEM_ICON_PAL       0xE506
 
 struct OverworldHud
 {
@@ -279,8 +286,9 @@ static void Task_OverworldHud(u8 taskId)
         if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
             gSprites[sOverworldHud.itemIconSpriteId].invisible = FALSE;
 
-        if (sOverworldHud.hpBarSpriteId != SPRITE_NONE)
-            gSprites[sOverworldHud.hpBarSpriteId].invisible = FALSE;
+        for (i = 0; i < 9; i++)
+            if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
+                gSprites[sOverworldHud.hpBarSpriteIds[i]].invisible = FALSE;
 
         UpdateHud();
     }
@@ -299,8 +307,9 @@ static void Task_OverworldHud(u8 taskId)
         if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
             gSprites[sOverworldHud.itemIconSpriteId].invisible = TRUE;
 
-        if (sOverworldHud.hpBarSpriteId != SPRITE_NONE)
-            gSprites[sOverworldHud.hpBarSpriteId].invisible = TRUE;
+        for (i = 0; i < 9; i++)
+            if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
+                gSprites[sOverworldHud.hpBarSpriteIds[i]].invisible = TRUE;
     }
 }
 	
@@ -314,7 +323,7 @@ static void CreateHudSprites(void)
         sOverworldHud.pokeballSpriteIds[i] = CreateSprite(&sSpriteTemplate_OverworldBall, i * 8 + 8, 32, 0);
 
     if (gSaveBlock1Ptr->registeredItem != ITEM_NONE)
-        sOverworldHud.itemIconSpriteId = AddItemIconObject(1000, 1000, gSaveBlock1Ptr->registeredItem);
+        sOverworldHud.itemIconSpriteId = AddItemIconObject(TAG_HUD_ITEM_ICON_TILE, TAG_HUD_ITEM_ICON_PAL, gSaveBlock1Ptr->registeredItem);
     else
         sOverworldHud.itemIconSpriteId = SPRITE_NONE;
 
@@ -339,6 +348,9 @@ static void DestroyHudSprites(void)
 
 static bool8 ShouldShowOverworldHud(void)
 {
+    if (ArePlayerFieldControlsLocked())
+        return FALSE;
+
     if (!IsFieldMessageBoxHidden())
         return FALSE;
 
@@ -351,18 +363,23 @@ static bool8 ShouldShowOverworldHud(void)
     if (FuncIsActiveTask(Task_HandleChooseMonInput))
         return FALSE;
 
+    if (gQuestLogState == QL_STATE_PLAYBACK)
+        return FALSE;
+
     return TRUE;
 }
 
 static void UpdateHud(void)
 {
-	if (!sOverworldHud.visible)
-    return;
-
-    struct Pokemon *mon = &gPlayerParty[0];
+    struct Pokemon *mon;
     u8 buf[POKEMON_NAME_LENGTH + 1];
-	u16 species;
+    u16 species;
     u8 i;
+
+    if (!sOverworldHud.visible)
+        return;
+
+    mon = &gPlayerParty[0];
 
     species = GetMonData(mon, MON_DATA_SPECIES);
     if (species == SPECIES_NONE)
@@ -379,8 +396,9 @@ static void UpdateHud(void)
         for (i = 0; i < PARTY_SIZE; i++)
             if (sOverworldHud.pokeballSpriteIds[i] != SPRITE_NONE)
                 gSprites[sOverworldHud.pokeballSpriteIds[i]].invisible = TRUE;
-        if (sOverworldHud.hpBarSpriteId != SPRITE_NONE)
-            gSprites[sOverworldHud.hpBarSpriteId].invisible = TRUE;
+        for (i = 0; i < 9; i++)
+            if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
+                gSprites[sOverworldHud.hpBarSpriteIds[i]].invisible = TRUE;
         return;
     }
 
@@ -393,8 +411,9 @@ static void UpdateHud(void)
     for (i = 0; i < PARTY_SIZE; i++)
         if (sOverworldHud.pokeballSpriteIds[i] != SPRITE_NONE)
             gSprites[sOverworldHud.pokeballSpriteIds[i]].invisible = FALSE;
-    if (sOverworldHud.hpBarSpriteId != SPRITE_NONE)
-        gSprites[sOverworldHud.hpBarSpriteId].invisible = FALSE;
+    for (i = 0; i < 9; i++)
+        if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
+            gSprites[sOverworldHud.hpBarSpriteIds[i]].invisible = FALSE;
 
     GetMonData(mon, MON_DATA_NICKNAME, buf);
     buf[POKEMON_NAME_LENGTH] = EOS;
@@ -482,6 +501,12 @@ static bool8 ShouldShowOverworldHud(void)
         return FALSE;
 
     if (FuncIsActiveTask(Task_StartMenuHandleInput))
+        return FALSE;
+
+    if (gBagMenuState.bagOpen)
+        return FALSE;
+
+    if (FuncIsActiveTask(Task_HandleChooseMonInput))
         return FALSE;
 
     if (gQuestLogState == QL_STATE_PLAYBACK)

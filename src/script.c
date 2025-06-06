@@ -3,6 +3,7 @@
 #include "event_data.h"
 #include "quest_log.h"
 #include "mystery_gift.h"
+#include "overworld_hud.h"
 #include "constants/maps.h"
 #include "constants/map_scripts.h"
 
@@ -197,6 +198,7 @@ u32 ScriptReadWord(struct ScriptContext *ctx)
 void LockPlayerFieldControls(void)
 {
     sLockFieldControls = TRUE;
+	DestroyOverworldHud();
 }
 
 void UnlockPlayerFieldControls(void)

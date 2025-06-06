@@ -372,17 +372,9 @@ static void UpdateHud(void)
         CopyWindowToVram(sOverworldHud.pokemonNameWindowId, COPYWIN_MAP);
         CopyWindowToVram(sOverworldHud.moneyWindowId, COPYWIN_MAP);
         CopyWindowToVram(sOverworldHud.buttonWindowId, COPYWIN_MAP);
-
-        if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
-            gSprites[sOverworldHud.itemIconSpriteId].invisible = TRUE;
-        for (i = 0; i < PARTY_SIZE; i++)
-            if (sOverworldHud.pokeballSpriteIds[i] != SPRITE_NONE)
-                gSprites[sOverworldHud.pokeballSpriteIds[i]].invisible = TRUE;
-        for (i = 0; i < 9; i++)
-            if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
-                gSprites[sOverworldHud.hpBarSpriteIds[i]].invisible = TRUE;
-        return;
+		        return;
     }
+
 
     PutWindowTilemap(sOverworldHud.pokemonNameWindowId);
     PutWindowTilemap(sOverworldHud.moneyWindowId);

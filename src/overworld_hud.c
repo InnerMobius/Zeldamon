@@ -1,14 +1,34 @@
 #include "global.h"
 #include "gflib.h"
 #include "decompress.h"
+#include "battle_interface.h"
 #include "pokemon_icon.h"
 #include "money.h"
 #include "item_menu_icons.h"
+#include "graphics.h"
 #include "overworld.h"
+#include "field_message_box.h"
+#include "quest_log.h"
+#include "constants/quest_log.h"
+#include "script.h"
+#include "start_menu.h"
+#include "item_menu.h"
 #include "overworld_hud.h"
 #include "task.h"
 #include "party_menu.h"
 #include "constants/items.h"
+#include "constants/species.h"
+
+#define TAG_OVERWORLD_BALL_TILE 55062
+#define TAG_OVERWORLD_BALL_PAL  55063
+#define B_INTERFACE_GFX_BALL_CAUGHT 70
+
+// Sprite tag values used exclusively by the overworld HUD
+#define TAG_HUD_POKEBALL_TILE       0xE500
+#define TAG_HUD_POKEBALL_SMALL_TILE 0xE501
+#define TAG_HUD_POKEBALL_PAL        0xE502
+#define TAG_HUD_ITEM_TILE           0xE503
+#define TAG_HUD_ITEM_PAL            0xE504
 
 struct OverworldHud
 {
@@ -16,9 +36,10 @@ struct OverworldHud
     u8 pokemonNameWindowId;
     u8 moneyWindowId;
     u8 buttonWindowId;
-    u8 hpBarSpriteId;
+    u8 hpBarSpriteIds[9];
     u8 pokeballSpriteIds[PARTY_SIZE];
     u8 itemIconSpriteId;
+	bool8 visible;
 };
 
 static EWRAM_DATA struct OverworldHud sOverworldHud = {0};
@@ -27,6 +48,147 @@ static void Task_OverworldHud(u8 taskId);
 static void CreateHudSprites(void);
 static void DestroyHudSprites(void);
 static void UpdateHud(void);
+static bool8 ShouldShowOverworldHud(void);
+static void UpdateHpBar(void);
+
+#define TAG_OW_HP_BAR_GREEN   0x5500
+#define TAG_OW_HP_BAR_YELLOW  0x5501
+#define TAG_OW_HP_BAR_RED     0x5502
+#define TAG_OW_HP_BAR_PAL     0x5503
+
+static const struct OamData sHpBarOamData = {
+    .y = 0,
+    .affineMode = ST_OAM_AFFINE_OFF,
+    .objMode = ST_OAM_OBJ_NORMAL,
+    .mosaic = FALSE,
+    .bpp = ST_OAM_4BPP,
+    .shape = SPRITE_SHAPE(8x8),
+    .x = 0,
+    .matrixNum = 0,
+    .size = SPRITE_SIZE(8x8),
+    .tileNum = 0,
+    .priority = 0,
+    .paletteNum = 0
+};
+
+static const union AnimCmd sHpBarAnim_0[] = {
+    ANIMCMD_FRAME(0, 0),
+    ANIMCMD_END
+};
+static const union AnimCmd sHpBarAnim_1[] = {
+    ANIMCMD_FRAME(1, 0),
+    ANIMCMD_END
+};
+static const union AnimCmd sHpBarAnim_2[] = {
+    ANIMCMD_FRAME(2, 0),
+    ANIMCMD_END
+};
+static const union AnimCmd sHpBarAnim_3[] = {
+    ANIMCMD_FRAME(3, 0),
+    ANIMCMD_END
+};
+static const union AnimCmd sHpBarAnim_4[] = {
+    ANIMCMD_FRAME(4, 0),
+    ANIMCMD_END
+};
+static const union AnimCmd sHpBarAnim_5[] = {
+    ANIMCMD_FRAME(5, 0),
+    ANIMCMD_END
+};
+static const union AnimCmd sHpBarAnim_6[] = {
+    ANIMCMD_FRAME(6, 0),
+    ANIMCMD_END
+};
+static const union AnimCmd sHpBarAnim_7[] = {
+    ANIMCMD_FRAME(7, 0),
+    ANIMCMD_END
+};
+static const union AnimCmd sHpBarAnim_8[] = {
+    ANIMCMD_FRAME(8, 0),
+    ANIMCMD_END
+};
+static const union AnimCmd sHpBarAnim_9[] = {
+    ANIMCMD_FRAME(9, 0),
+    ANIMCMD_END
+};
+static const union AnimCmd sHpBarAnim_10[] = {
+    ANIMCMD_FRAME(10, 0),
+    ANIMCMD_END
+};
+static const union AnimCmd sHpBarAnim_11[] = {
+    ANIMCMD_FRAME(11, 0),
+    ANIMCMD_END
+};
+
+static const union AnimCmd *const sHpBarAnimTable[] = {
+    sHpBarAnim_0,
+    sHpBarAnim_1,
+    sHpBarAnim_2,
+    sHpBarAnim_3,
+    sHpBarAnim_4,
+    sHpBarAnim_5,
+    sHpBarAnim_6,
+    sHpBarAnim_7,
+    sHpBarAnim_8,
+    sHpBarAnim_9,
+    sHpBarAnim_10,
+    sHpBarAnim_11
+};
+
+static const struct SpriteSheet sHpBarSpriteSheets[] = {
+    {gBattleInterface_Gfx[B_INTERFACE_GFX_HP_BAR_GREEN], 12 * TILE_SIZE_4BPP, TAG_OW_HP_BAR_GREEN},
+    {gBattleInterface_Gfx[B_INTERFACE_GFX_HP_BAR_YELLOW], 12 * TILE_SIZE_4BPP, TAG_OW_HP_BAR_YELLOW},
+    {gBattleInterface_Gfx[B_INTERFACE_GFX_HP_BAR_RED], 12 * TILE_SIZE_4BPP, TAG_OW_HP_BAR_RED},
+    {NULL, 0, 0},
+};
+
+static const struct SpritePalette sHpBarSpritePalette = {gBattleInterface_Healthbar_Pal, TAG_OW_HP_BAR_PAL};
+
+static const struct SpriteTemplate sHpBarSpriteTemplate = {
+    .tileTag = TAG_OW_HP_BAR_GREEN,
+    .paletteTag = TAG_OW_HP_BAR_PAL,
+    .oam = &sHpBarOamData,
+    .anims = sHpBarAnimTable,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy
+};
+
+static const struct OamData sOamData_OverworldBall = {
+    .shape = SPRITE_SHAPE(8x8),
+    .size = SPRITE_SIZE(8x8),
+    .priority = 2,
+};
+
+static const union AnimCmd sAnim_OverworldBall[] = {
+    ANIMCMD_FRAME(0, 0),
+    ANIMCMD_END
+};
+
+static const union AnimCmd *const sSpriteAnimTable_OverworldBall[] = {
+    sAnim_OverworldBall
+};
+
+static const struct SpriteSheet sSpriteSheet_OverworldBall = {
+    gBattleInterface_Gfx + B_INTERFACE_GFX_BALL_CAUGHT,
+    1 * TILE_SIZE_4BPP,
+    TAG_OVERWORLD_BALL_TILE
+};
+
+static const struct SpritePalette sSpritePalette_OverworldBall = {
+    gBattleInterface_Healthbar_Pal,
+    TAG_OVERWORLD_BALL_PAL
+};
+
+static const struct SpriteTemplate sSpriteTemplate_OverworldBall = {
+    .tileTag = TAG_OVERWORLD_BALL_TILE,
+    .paletteTag = TAG_OVERWORLD_BALL_PAL,
+    .oam = &sOamData_OverworldBall,
+    .anims = sSpriteAnimTable_OverworldBall,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
 
 void CreateOverworldHud(void)
 {
@@ -75,6 +237,7 @@ void CreateOverworldHud(void)
     FillWindowPixelBuffer(sOverworldHud.buttonWindowId, PIXEL_FILL(1));
 
     sOverworldHud.taskId = CreateTask(Task_OverworldHud, 80);
+	sOverworldHud.visible = TRUE;
     CreateHudSprites();
     CopyWindowToVram(sOverworldHud.pokemonNameWindowId, COPYWIN_FULL);
     CopyWindowToVram(sOverworldHud.moneyWindowId, COPYWIN_FULL);
@@ -99,24 +262,64 @@ void DestroyOverworldHud(void)
 
 static void Task_OverworldHud(u8 taskId)
 {
-    UpdateHud();
-}
+    u8 i;
 
+    if (ShouldShowOverworldHud())
+    {
+        sOverworldHud.visible = TRUE;
+
+        PutWindowTilemap(sOverworldHud.pokemonNameWindowId);
+        PutWindowTilemap(sOverworldHud.moneyWindowId);
+        PutWindowTilemap(sOverworldHud.buttonWindowId);
+
+        for (i = 0; i < PARTY_SIZE; i++)
+            if (sOverworldHud.pokeballSpriteIds[i] != SPRITE_NONE)
+                gSprites[sOverworldHud.pokeballSpriteIds[i]].invisible = FALSE;
+
+        if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
+            gSprites[sOverworldHud.itemIconSpriteId].invisible = FALSE;
+
+        if (sOverworldHud.hpBarSpriteId != SPRITE_NONE)
+            gSprites[sOverworldHud.hpBarSpriteId].invisible = FALSE;
+
+        UpdateHud();
+    }
+    else
+    {
+        sOverworldHud.visible = FALSE;
+
+        ClearWindowTilemap(sOverworldHud.pokemonNameWindowId);
+        ClearWindowTilemap(sOverworldHud.moneyWindowId);
+        ClearWindowTilemap(sOverworldHud.buttonWindowId);
+
+        for (i = 0; i < PARTY_SIZE; i++)
+            if (sOverworldHud.pokeballSpriteIds[i] != SPRITE_NONE)
+                gSprites[sOverworldHud.pokeballSpriteIds[i]].invisible = TRUE;
+
+        if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
+            gSprites[sOverworldHud.itemIconSpriteId].invisible = TRUE;
+
+        if (sOverworldHud.hpBarSpriteId != SPRITE_NONE)
+            gSprites[sOverworldHud.hpBarSpriteId].invisible = TRUE;
+    }
+}
+	
 static void CreateHudSprites(void)
 {
     u8 i;
-    LoadCompressedSpriteSheet(&sSpriteSheet_MenuPokeballSmall);
-    LoadCompressedSpritePalette(&sSpritePalette_MenuPokeball);
+    LoadSpriteSheet(&sSpriteSheet_OverworldBall);
+    LoadSpritePalette(&sSpritePalette_OverworldBall);
 
     for (i = 0; i < PARTY_SIZE; i++)
-        sOverworldHud.pokeballSpriteIds[i] = CreateSprite(&sSpriteTemplate_MenuPokeballSmall, i * 8 + 8, 32, 0);
+        sOverworldHud.pokeballSpriteIds[i] = CreateSprite(&sSpriteTemplate_OverworldBall, i * 8 + 8, 32, 0);
 
     if (gSaveBlock1Ptr->registeredItem != ITEM_NONE)
         sOverworldHud.itemIconSpriteId = AddItemIconObject(1000, 1000, gSaveBlock1Ptr->registeredItem);
     else
         sOverworldHud.itemIconSpriteId = SPRITE_NONE;
 
-    sOverworldHud.hpBarSpriteId = CreateSprite(&sSpriteTemplate_MenuPokeball, 40, 16, 0); // placeholder
+    for (i = 0; i < 9; i++)
+        sOverworldHud.hpBarSpriteIds[i] = CreateSprite(&sHpBarSpriteTemplate, 40 + i * 8, 16, 0);
 }
 
 static void DestroyHudSprites(void)
@@ -129,14 +332,69 @@ static void DestroyHudSprites(void)
         if (sOverworldHud.pokeballSpriteIds[i] != SPRITE_NONE)
             DestroySpriteAndFreeResources(&gSprites[sOverworldHud.pokeballSpriteIds[i]]);
 
-    if (sOverworldHud.hpBarSpriteId != SPRITE_NONE)
-        DestroySpriteAndFreeResources(&gSprites[sOverworldHud.hpBarSpriteId]);
+    for (i = 0; i < 9; i++)
+        if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
+            DestroySpriteAndFreeResources(&gSprites[sOverworldHud.hpBarSpriteIds[i]]);
+}
+
+static bool8 ShouldShowOverworldHud(void)
+{
+    if (!IsFieldMessageBoxHidden())
+        return FALSE;
+
+    if (FuncIsActiveTask(Task_StartMenuHandleInput))
+        return FALSE;
+
+    if (gBagMenuState.bagOpen)
+        return FALSE;
+
+    if (FuncIsActiveTask(Task_HandleChooseMonInput))
+        return FALSE;
+
+    return TRUE;
 }
 
 static void UpdateHud(void)
 {
+	if (!sOverworldHud.visible)
+    return;
+
     struct Pokemon *mon = &gPlayerParty[0];
     u8 buf[POKEMON_NAME_LENGTH + 1];
+	u16 species;
+    u8 i;
+
+    species = GetMonData(mon, MON_DATA_SPECIES);
+    if (species == SPECIES_NONE)
+    {
+        ClearWindowTilemap(sOverworldHud.pokemonNameWindowId);
+        ClearWindowTilemap(sOverworldHud.moneyWindowId);
+        ClearWindowTilemap(sOverworldHud.buttonWindowId);
+        CopyWindowToVram(sOverworldHud.pokemonNameWindowId, COPYWIN_MAP);
+        CopyWindowToVram(sOverworldHud.moneyWindowId, COPYWIN_MAP);
+        CopyWindowToVram(sOverworldHud.buttonWindowId, COPYWIN_MAP);
+
+        if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
+            gSprites[sOverworldHud.itemIconSpriteId].invisible = TRUE;
+        for (i = 0; i < PARTY_SIZE; i++)
+            if (sOverworldHud.pokeballSpriteIds[i] != SPRITE_NONE)
+                gSprites[sOverworldHud.pokeballSpriteIds[i]].invisible = TRUE;
+        if (sOverworldHud.hpBarSpriteId != SPRITE_NONE)
+            gSprites[sOverworldHud.hpBarSpriteId].invisible = TRUE;
+        return;
+    }
+
+    PutWindowTilemap(sOverworldHud.pokemonNameWindowId);
+    PutWindowTilemap(sOverworldHud.moneyWindowId);
+    PutWindowTilemap(sOverworldHud.buttonWindowId);
+
+    if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
+        gSprites[sOverworldHud.itemIconSpriteId].invisible = FALSE;
+    for (i = 0; i < PARTY_SIZE; i++)
+        if (sOverworldHud.pokeballSpriteIds[i] != SPRITE_NONE)
+            gSprites[sOverworldHud.pokeballSpriteIds[i]].invisible = FALSE;
+    if (sOverworldHud.hpBarSpriteId != SPRITE_NONE)
+        gSprites[sOverworldHud.hpBarSpriteId].invisible = FALSE;
 
     GetMonData(mon, MON_DATA_NICKNAME, buf);
     buf[POKEMON_NAME_LENGTH] = EOS;
@@ -150,4 +408,84 @@ static void UpdateHud(void)
 
     CopyWindowToVram(sOverworldHud.pokemonNameWindowId, COPYWIN_GFX);
     CopyWindowToVram(sOverworldHud.moneyWindowId, COPYWIN_GFX);
+	
+    UpdateHpBar();
+}
+
+static void UpdateHpBar(void)
+{
+    struct Pokemon *mon = &gPlayerParty[0];
+    u32 curHp = GetMonData(mon, MON_DATA_HP);
+    u32 maxHp = GetMonData(mon, MON_DATA_MAX_HP);
+    u8 numWholeHpBarTiles = 0;
+    u8 animNum;
+    s64 pointsPerTile;
+    s64 totalPoints;
+    u8 i;
+    u16 tileTag;
+
+    switch (GetHPBarLevel(curHp, maxHp))
+    {
+    case HP_BAR_YELLOW:
+        tileTag = TAG_OW_HP_BAR_YELLOW;
+        break;
+    case HP_BAR_RED:
+        tileTag = TAG_OW_HP_BAR_RED;
+        break;
+    default:
+        tileTag = TAG_OW_HP_BAR_GREEN;
+        break;
+    }
+
+    for (i = 0; i < 9; i++)
+        gSprites[sOverworldHud.hpBarSpriteIds[i]].oam.tileNum = GetSpriteTileStartByTag(tileTag);
+
+    if (curHp == maxHp)
+    {
+        for (i = 2; i < 8; i++)
+            StartSpriteAnim(&gSprites[sOverworldHud.hpBarSpriteIds[i]], 8);
+    }
+    else
+    {
+        pointsPerTile = (maxHp << 2) / 6;
+        totalPoints = (curHp << 2);
+
+        while (totalPoints > pointsPerTile)
+        {
+            totalPoints -= pointsPerTile;
+            numWholeHpBarTiles++;
+        }
+
+        numWholeHpBarTiles += 2;
+
+        for (i = 2; i < numWholeHpBarTiles; i++)
+            StartSpriteAnim(&gSprites[sOverworldHud.hpBarSpriteIds[i]], 8);
+
+        animNum = (totalPoints * 6) / pointsPerTile;
+        StartSpriteAnim(&gSprites[sOverworldHud.hpBarSpriteIds[numWholeHpBarTiles]], animNum);
+
+        for (i = numWholeHpBarTiles + 1; i < 8; i++)
+            StartSpriteAnim(&gSprites[sOverworldHud.hpBarSpriteIds[i]], 0);
+    }
+
+    StartSpriteAnim(&gSprites[sOverworldHud.hpBarSpriteIds[0]], 9);
+    StartSpriteAnim(&gSprites[sOverworldHud.hpBarSpriteIds[1]], 10);
+    StartSpriteAnim(&gSprites[sOverworldHud.hpBarSpriteIds[8]], 11);
+}
+
+static bool8 ShouldShowOverworldHud(void)
+{
+    if (ArePlayerFieldControlsLocked())
+        return FALSE;
+
+    if (GetFieldMessageBoxType() != FIELD_MESSAGE_BOX_HIDDEN)
+        return FALSE;
+
+    if (FuncIsActiveTask(Task_StartMenuHandleInput))
+        return FALSE;
+
+    if (gQuestLogState == QL_STATE_PLAYBACK)
+        return FALSE;
+
+    return TRUE;
 }

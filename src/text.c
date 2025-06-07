@@ -1717,11 +1717,11 @@ static void DecompressGlyph_Bold(u16 glyphId)
 static void DecompressGlyph_Hud(u16 glyphId)
 {
     CpuCopy32(gHudFontTiles + glyphId * 0x20, gGlyphInfo.pixels, 0x20);
-    gGlyphInfo.width = 8;
+    gGlyphInfo.width = sFontNormalLatinGlyphWidths[glyphId];
     gGlyphInfo.height = 8;
 }
 
 static s32 GetGlyphWidth_Hud(u16 glyphId, bool32 isJapanese)
 {
-    return 8;
+    return sFontNormalLatinGlyphWidths[glyphId];
 }

@@ -33,7 +33,6 @@ COMMON_DATA TextFlags gTextFlags = {0};
 static const u8 sDownArrowTiles[]    = INCBIN_U8("graphics/fonts/down_arrows.4bpp");
 static const u8 sDoubleArrowTiles1[] = INCBIN_U8("graphics/fonts/down_arrow_3.4bpp");
 static const u8 sDoubleArrowTiles2[] = INCBIN_U8("graphics/fonts/down_arrow_4.4bpp");
-const u8 gHudFontTiles[] = INCBIN_U8("graphics/fonts/hudfont.4bpp");
 
 static const u8 sDownArrowYCoords[]           = { 0, 16, 32, 16 };
 static const u8 sWindowVerticalScrollSpeeds[] = {

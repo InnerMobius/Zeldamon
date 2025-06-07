@@ -168,6 +168,7 @@ u16 FontFunc_Normal(struct TextPrinter *textPrinter);
 u16 FontFunc_NormalCopy2(struct TextPrinter *textPrinter);
 u16 FontFunc_Male(struct TextPrinter *textPrinter);
 u16 FontFunc_Female(struct TextPrinter *textPrinter);
+u16 FontFunc_Hud(struct TextPrinter *textPrinter);
 u16 FontFunc_Braille(struct TextPrinter *textPrinter);
 
 void TextPrinterInitDownArrowCounters(struct TextPrinter *textPrinter);

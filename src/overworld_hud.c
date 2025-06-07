@@ -44,7 +44,7 @@ struct OverworldHud
     u8 pokemonNameWindowId;
     u8 moneyWindowId;
     u8 buttonWindowId;
-    u8 hpBarSpriteIds[9];
+    u8 hpBarSpriteIds[6];
     u8 pokeballSpriteIds[PARTY_SIZE];
     u8 itemIconSpriteId;
 	bool8 visible;
@@ -289,7 +289,7 @@ static void Task_OverworldHud(u8 taskId)
         if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
             gSprites[sOverworldHud.itemIconSpriteId].invisible = FALSE;
 
-        for (i = 0; i < 9; i++)
+        for (i = 0; i < 6; i++)
             if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
                 gSprites[sOverworldHud.hpBarSpriteIds[i]].invisible = FALSE;
 
@@ -310,7 +310,7 @@ static void Task_OverworldHud(u8 taskId)
         if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
             gSprites[sOverworldHud.itemIconSpriteId].invisible = TRUE;
 
-        for (i = 0; i < 9; i++)
+        for (i = 0; i < 6; i++)
             if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
                 gSprites[sOverworldHud.hpBarSpriteIds[i]].invisible = TRUE;
     }
@@ -332,7 +332,7 @@ static void CreateHudSprites(void)
     else
         sOverworldHud.itemIconSpriteId = SPRITE_NONE;
 
-    for (i = 0; i < 9; i++)
+    for (i = 0; i < 6; i++)
         sOverworldHud.hpBarSpriteIds[i] = CreateSprite(&sHpBarSpriteTemplate, 8 + i * 8, 8, 0);
 }
 
@@ -350,7 +350,7 @@ static void DestroyHudSprites(void)
         if (sOverworldHud.pokeballSpriteIds[i] != SPRITE_NONE)
             DestroySpriteAndFreeResources(&gSprites[sOverworldHud.pokeballSpriteIds[i]]);
 
-    for (i = 0; i < 9; i++)
+    for (i = 0; i < 6; i++)
         if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
             DestroySpriteAndFreeResources(&gSprites[sOverworldHud.hpBarSpriteIds[i]]);
 
@@ -396,7 +396,7 @@ static void UpdateHud(void)
         for (i = 0; i < PARTY_SIZE; i++)
             if (sOverworldHud.pokeballSpriteIds[i] != SPRITE_NONE)
                 gSprites[sOverworldHud.pokeballSpriteIds[i]].invisible = TRUE;
-        for (i = 0; i < 9; i++)
+        for (i = 0; i < 6; i++)
             if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
                 gSprites[sOverworldHud.hpBarSpriteIds[i]].invisible = TRUE;
 
@@ -413,7 +413,7 @@ static void UpdateHud(void)
     for (i = 0; i < PARTY_SIZE; i++)
         if (sOverworldHud.pokeballSpriteIds[i] != SPRITE_NONE)
             gSprites[sOverworldHud.pokeballSpriteIds[i]].invisible = FALSE;
-    for (i = 0; i < 9; i++)
+    for (i = 0; i < 6; i++)
         if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
             gSprites[sOverworldHud.hpBarSpriteIds[i]].invisible = FALSE;
 
@@ -451,12 +451,12 @@ static void UpdateHpBar(void)
         break;
     }
 
-    for (i = 0; i < 9; i++)
+    for (i = 0; i < 6; i++)
         gSprites[sOverworldHud.hpBarSpriteIds[i]].oam.tileNum = GetSpriteTileStartByTag(tileTag);
 
     if (curHp == maxHp)
     {
-        for (i = 2; i < 8; i++)
+        for (i = 0; i < 6; i++)
             StartSpriteAnim(&gSprites[sOverworldHud.hpBarSpriteIds[i]], 8);
     }
     else
@@ -470,21 +470,15 @@ static void UpdateHpBar(void)
             numWholeHpBarTiles++;
         }
 
-        numWholeHpBarTiles += 2;
-
-        for (i = 2; i < numWholeHpBarTiles; i++)
+        for (i = 0; i < numWholeHpBarTiles; i++)
             StartSpriteAnim(&gSprites[sOverworldHud.hpBarSpriteIds[i]], 8);
 
         animNum = (totalPoints * 6) / pointsPerTile;
         StartSpriteAnim(&gSprites[sOverworldHud.hpBarSpriteIds[numWholeHpBarTiles]], animNum);
 
-        for (i = numWholeHpBarTiles + 1; i < 8; i++)
+        for (i = numWholeHpBarTiles + 1; i < 6; i++)
             StartSpriteAnim(&gSprites[sOverworldHud.hpBarSpriteIds[i]], 0);
     }
-
-    StartSpriteAnim(&gSprites[sOverworldHud.hpBarSpriteIds[0]], 9);
-    StartSpriteAnim(&gSprites[sOverworldHud.hpBarSpriteIds[1]], 10);
-    StartSpriteAnim(&gSprites[sOverworldHud.hpBarSpriteIds[8]], 11);
 }
 
 static bool8 ShouldShowOverworldHud(void)

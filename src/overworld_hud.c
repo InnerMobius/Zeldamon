@@ -23,6 +23,7 @@
 
 #define TAG_OVERWORLD_BALL_TILE 55062
 #define TAG_OVERWORLD_BALL_PAL  55063
+#define B_INTERFACE_GFX_BALL_PARTY_SUMMARY 66
 #define B_INTERFACE_GFX_BALL_CAUGHT 70
 #define B_INTERFACE_GFX_HP_BAR_GREEN 3
 #define B_INTERFACE_GFX_HP_BAR_YELLOW 47
@@ -58,6 +59,7 @@ static void DestroyHudSprites(void);
 static void UpdateHud(void);
 static bool8 ShouldShowOverworldHud(void);
 static void UpdateHpBar(void);
+static void UpdatePartyBallIcons(void);
 
 #define TAG_OW_HP_BAR_GREEN   0x5500
 #define TAG_OW_HP_BAR_YELLOW  0x5501
@@ -165,7 +167,7 @@ static const struct SpriteTemplate sHpBarSpriteTemplate = {
 static const struct OamData sOamData_OverworldBall = {
     .shape = SPRITE_SHAPE(8x8),
     .size = SPRITE_SIZE(8x8),
-    .priority = 2,
+    .priority = 0,
 };
 
 static const union AnimCmd sAnim_OverworldBall[] = {
@@ -178,8 +180,8 @@ static const union AnimCmd *const sSpriteAnimTable_OverworldBall[] = {
 };
 
 static const struct SpriteSheet sSpriteSheet_OverworldBall = {
-    gBattleInterface_Gfx + B_INTERFACE_GFX_BALL_CAUGHT,
-    1 * TILE_SIZE_4BPP,
+    gBattleInterface_Gfx + B_INTERFACE_GFX_BALL_PARTY_SUMMARY,
+    4 * TILE_SIZE_4BPP,
     TAG_OVERWORLD_BALL_TILE
 };
 
@@ -334,6 +336,8 @@ static void CreateHudSprites(void)
 
     for (i = 0; i < 6; i++)
         sOverworldHud.hpBarSpriteIds[i] = CreateSprite(&sHpBarSpriteTemplate, 8 + i * 8, 8, 0);
+	
+    UpdatePartyBallIcons();
 }
 
 static void DestroyHudSprites(void)
@@ -423,7 +427,8 @@ static void UpdateHud(void)
     FillWindowPixelBuffer(sOverworldHud.pokemonNameWindowId, PIXEL_FILL(1));
     AddTextPrinterParameterized(sOverworldHud.pokemonNameWindowId, FONT_NORMAL, buf, 0, 0, 0, NULL);
 
-    UpdateHpBar();
+    UpdatePartyBallIcons();
+	UpdateHpBar();
 }
 
 static void UpdateHpBar(void)
@@ -478,6 +483,36 @@ static void UpdateHpBar(void)
 
         for (i = numWholeHpBarTiles + 1; i < 6; i++)
             StartSpriteAnim(&gSprites[sOverworldHud.hpBarSpriteIds[i]], 0);
+    }
+}
+
+static void UpdatePartyBallIcons(void)
+{
+    u8 i;
+    u16 baseTile = GetSpriteTileStartByTag(TAG_OVERWORLD_BALL_TILE);
+
+    for (i = 0; i < PARTY_SIZE; i++)
+    {
+        u16 species = GetMonData(&gPlayerParty[i], MON_DATA_SPECIES_OR_EGG);
+        if (sOverworldHud.pokeballSpriteIds[i] == SPRITE_NONE)
+            continue;
+
+        if (species == SPECIES_NONE)
+        {
+            gSprites[sOverworldHud.pokeballSpriteIds[i]].oam.tileNum = baseTile + 1;
+        }
+        else if (GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG))
+        {
+            gSprites[sOverworldHud.pokeballSpriteIds[i]].oam.tileNum = baseTile + 2;
+        }
+        else if (GetMonData(&gPlayerParty[i], MON_DATA_HP) == 0)
+        {
+            gSprites[sOverworldHud.pokeballSpriteIds[i]].oam.tileNum = baseTile + 3;
+        }
+        else
+        {
+            gSprites[sOverworldHud.pokeballSpriteIds[i]].oam.tileNum = baseTile;
+        }
     }
 }
 

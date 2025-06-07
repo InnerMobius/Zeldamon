@@ -271,10 +271,8 @@ void DestroyOverworldHud(void)
 static void Task_OverworldHud(u8 taskId)
 {
     u8 i;
-	struct Pokemon *mon = &gPlayerParty[0];
-    u16 species = GetMonData(mon, MON_DATA_SPECIES);
 
-    if (ShouldShowOverworldHud() && species != SPECIES_NONE)
+    if (ShouldShowOverworldHud())
     {
         sOverworldHud.visible = TRUE;
 
@@ -369,20 +367,35 @@ static void UpdateHud(void)
         return;
 
     species = GetMonData(mon, MON_DATA_SPECIES);
+
+    PutWindowTilemap(sOverworldHud.moneyWindowId);
+
+    FillWindowPixelBuffer(sOverworldHud.moneyWindowId, PIXEL_FILL(1));
+    ConvertIntToDecimalStringN(buf, GetMoney(&gSaveBlock1Ptr->money), STR_CONV_MODE_RIGHT_ALIGN, 6);
+    AddTextPrinterParameterized(sOverworldHud.moneyWindowId, FONT_NORMAL, buf, 8, 0, 0, NULL);
+    CopyWindowToVram(sOverworldHud.moneyWindowId, COPYWIN_GFX);
+
     if (species == SPECIES_NONE)
     {
         ClearWindowTilemap(sOverworldHud.pokemonNameWindowId);
-        ClearWindowTilemap(sOverworldHud.moneyWindowId);
         ClearWindowTilemap(sOverworldHud.buttonWindowId);
         CopyWindowToVram(sOverworldHud.pokemonNameWindowId, COPYWIN_MAP);
-        CopyWindowToVram(sOverworldHud.moneyWindowId, COPYWIN_MAP);
         CopyWindowToVram(sOverworldHud.buttonWindowId, COPYWIN_MAP);
-		        return;
+
+        if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
+            gSprites[sOverworldHud.itemIconSpriteId].invisible = TRUE;
+        for (i = 0; i < PARTY_SIZE; i++)
+            if (sOverworldHud.pokeballSpriteIds[i] != SPRITE_NONE)
+                gSprites[sOverworldHud.pokeballSpriteIds[i]].invisible = TRUE;
+        for (i = 0; i < 9; i++)
+            if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
+                gSprites[sOverworldHud.hpBarSpriteIds[i]].invisible = TRUE;
+
+        return;
     }
 
 
     PutWindowTilemap(sOverworldHud.pokemonNameWindowId);
-    PutWindowTilemap(sOverworldHud.moneyWindowId);
     PutWindowTilemap(sOverworldHud.buttonWindowId);
 
     if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
@@ -400,13 +413,8 @@ static void UpdateHud(void)
     FillWindowPixelBuffer(sOverworldHud.pokemonNameWindowId, PIXEL_FILL(1));
     AddTextPrinterParameterized(sOverworldHud.pokemonNameWindowId, FONT_NORMAL, buf, 0, 0, 0, NULL);
 
-    FillWindowPixelBuffer(sOverworldHud.moneyWindowId, PIXEL_FILL(1));
-    ConvertIntToDecimalStringN(buf, GetMoney(&gSaveBlock1Ptr->money), STR_CONV_MODE_RIGHT_ALIGN, 6);
-    AddTextPrinterParameterized(sOverworldHud.moneyWindowId, FONT_NORMAL, buf, 8, 0, 0, NULL);
-
     CopyWindowToVram(sOverworldHud.pokemonNameWindowId, COPYWIN_GFX);
-    CopyWindowToVram(sOverworldHud.moneyWindowId, COPYWIN_GFX);
-	
+
     UpdateHpBar();
 }
 

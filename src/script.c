@@ -204,6 +204,8 @@ void LockPlayerFieldControls(void)
 void UnlockPlayerFieldControls(void)
 {
     sLockFieldControls = FALSE;
+	if (CanShowOverworldHud())
+        CreateOverworldHud();
 }
 
 bool8 ArePlayerFieldControlsLocked(void)

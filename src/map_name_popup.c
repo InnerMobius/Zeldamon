@@ -33,8 +33,6 @@ void ShowMapNamePopup(bool32 palIntoFadedBuffer)
         if (taskId == TASK_NONE)
         {
             taskId = CreateTask(Task_MapNamePopup, 90);
-            ChangeBgX(0,  0x0000, 0);
-            ChangeBgY(0, -0x1081, 0);
             gTasks[taskId].tState = 0;
             gTasks[taskId].tPos = 0;
             gTasks[taskId].tPalIntoFadedBuffer = palIntoFadedBuffer;
@@ -56,19 +54,8 @@ static void Task_MapNamePopup(u8 taskId)
     case 0:
         task->tWindowId = MapNamePopupCreateWindow(task->tPalIntoFadedBuffer);
         task->tWindowExists = TRUE;
-        task->tState = 1;
-        break;
-    case 1:
-        if (IsDma3ManagerBusyWithBgCopy())
-            break;
-        // fallthrough
-    case 2:
-        task->tPos -= 2;
-        if (task->tPos <= -24)
-        {
-            task->tState = 3;
-            task->tTimer = 0;
-        }
+		task->tTimer = 0;
+        task->tState = 3;
         break;
     case 3:
         task->tTimer++;
@@ -79,23 +66,19 @@ static void Task_MapNamePopup(u8 taskId)
         }
         break;
     case 4:
-        task->tPos += 2;
-        if (task->tPos >= 0)
+        if (task->tReshow)
         {
-            if (task->tReshow)
-            {
-                MapNamePopupPrintMapNameOnWindow(task->tWindowId);
-                CopyWindowToVram(task->tWindowId, COPYWIN_GFX);
-                task->tState = 1;
-                task->tReshow = FALSE;
-            }
-            else
-            {
-                task->tState = 6;
-                return;
-            }
+            MapNamePopupPrintMapNameOnWindow(task->tWindowId);
+            CopyWindowToVram(task->tWindowId, COPYWIN_GFX);
+            task->tReshow = FALSE;
+            task->tTimer = 0;
+            task->tState = 3;
         }
-    case 5:
+        else
+        {
+            task->tState = 6;
+            return;
+        }
         break;
     case 6:
         if (task->tWindowExists && !task->tWindowCleared)
@@ -116,14 +99,13 @@ static void Task_MapNamePopup(u8 taskId)
                 task->tWindowDestroyed = TRUE;
             }
             task->tState = 8;
-            ChangeBgY(0, 0x00000000, 0);
         }
         return;
     case 8:
         DestroyTask(taskId);
         return;
     }
-    SetGpuReg(REG_OFFSET_BG0VOFS, task->tPos);
+    SetGpuReg(REG_OFFSET_BG0VOFS, 0);
 }
 
 void DismissMapNamePopup(void)
@@ -173,6 +155,7 @@ static u16 MapNamePopupCreateWindow(bool32 palintoFadedBuffer)
             tileNum = 0x02D;
         }
     }
+	windowTemplate.tilemapLeft = 30 - windowTemplate.width;
     windowId = AddWindow(&windowTemplate);
     if (palintoFadedBuffer)
         LoadPalette(GetTextWindowPalette(3), BG_PLTT_ID(WIN_PAL_NUM), PLTT_SIZE_4BPP);

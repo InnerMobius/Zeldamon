@@ -48,7 +48,8 @@ struct OverworldHud
     u8 hpBarSpriteIds[6];
     u8 pokeballSpriteIds[PARTY_SIZE];
     u8 itemIconSpriteId;
-	bool8 visible;
+    u16 registeredItemId;
+        bool8 visible;
 };
 
 static EWRAM_DATA struct OverworldHud sOverworldHud = {0};
@@ -244,7 +245,7 @@ void CreateOverworldHud(void)
 
     FillWindowPixelBuffer(sOverworldHud.pokemonNameWindowId, PIXEL_FILL(1));
     FillWindowPixelBuffer(sOverworldHud.moneyWindowId, PIXEL_FILL(1));
-    FillWindowPixelBuffer(sOverworldHud.buttonWindowId, PIXEL_FILL(1));
+    FillWindowPixelBuffer(sOverworldHud.buttonWindowId, PIXEL_FILL(0));
 
     sOverworldHud.taskId = CreateTask(Task_OverworldHud, 80);
 	sOverworldHud.visible = TRUE;
@@ -330,9 +331,21 @@ static void CreateHudSprites(void)
         sOverworldHud.pokeballSpriteIds[i] = CreateSprite(&sSpriteTemplate_OverworldBall, i * 8 + 8, 38, 0);
 
     if (gSaveBlock1Ptr->registeredItem != ITEM_NONE)
+	{
         sOverworldHud.itemIconSpriteId = AddItemIconObject(TAG_HUD_ITEM_ICON_TILE, TAG_HUD_ITEM_ICON_PAL, gSaveBlock1Ptr->registeredItem);
+        if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
+        {
+            struct Sprite *icon = &gSprites[sOverworldHud.itemIconSpriteId];
+            icon->x = 216;
+            icon->y = 18;
+        }
+        sOverworldHud.registeredItemId = gSaveBlock1Ptr->registeredItem;
+    }	
     else
+    {
         sOverworldHud.itemIconSpriteId = SPRITE_NONE;
+	        sOverworldHud.registeredItemId = ITEM_NONE;
+    }
 
     for (i = 0; i < 6; i++)
         sOverworldHud.hpBarSpriteIds[i] = CreateSprite(&sHpBarSpriteTemplate, 8 + i * 8, 8, 0);
@@ -348,6 +361,7 @@ static void DestroyHudSprites(void)
         DestroySprite(&gSprites[sOverworldHud.itemIconSpriteId]);
         FreeSpriteTilesByTag(TAG_HUD_ITEM_ICON_TILE);
         FreeSpritePaletteByTag(TAG_HUD_ITEM_ICON_PAL);
+		sOverworldHud.registeredItemId = ITEM_NONE;
     }
 
     for (i = 0; i < PARTY_SIZE; i++)
@@ -380,6 +394,30 @@ static void UpdateHud(void)
         return;
 
     species = GetMonData(mon, MON_DATA_SPECIES);
+
+    if (gSaveBlock1Ptr->registeredItem != sOverworldHud.registeredItemId)
+    {
+        if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
+        {
+            DestroySprite(&gSprites[sOverworldHud.itemIconSpriteId]);
+            FreeSpriteTilesByTag(TAG_HUD_ITEM_ICON_TILE);
+            FreeSpritePaletteByTag(TAG_HUD_ITEM_ICON_PAL);
+            sOverworldHud.itemIconSpriteId = SPRITE_NONE;
+        }
+
+        if (gSaveBlock1Ptr->registeredItem != ITEM_NONE)
+        {
+            sOverworldHud.itemIconSpriteId = AddItemIconObject(TAG_HUD_ITEM_ICON_TILE, TAG_HUD_ITEM_ICON_PAL, gSaveBlock1Ptr->registeredItem);
+            if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
+            {
+                struct Sprite *icon = &gSprites[sOverworldHud.itemIconSpriteId];
+                icon->x = 216;
+                icon->y = 18;
+            }
+        }
+
+        sOverworldHud.registeredItemId = gSaveBlock1Ptr->registeredItem;
+    }
 	
     PutWindowTilemap(sOverworldHud.moneyWindowId);
 

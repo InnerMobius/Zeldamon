@@ -2111,8 +2111,10 @@ static void ResumeMap(bool32 inLink)
         SetUpFieldTasks();
 
     if (CanShowOverworldHud())
+    {
         CreateOverworldHud();
-	RunOnResumeMapScript();
+    }
+    RunOnResumeMapScript();
 }
 
 static void InitObjectEventsLink(void)

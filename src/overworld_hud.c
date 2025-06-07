@@ -35,7 +35,8 @@
 #define TAG_HUD_POKEBALL_PAL        0xE502
 #define TAG_HUD_ITEM_TILE           0xE503
 #define TAG_HUD_ITEM_PAL            0xE504
-// Dedicated tags for the registered item icon
+// Dedicated tags for the registered item icon.  These tags are outside the
+// range used by field effects (0x1000+) to ensure palettes don't share slots.
 #define TAG_HUD_ITEM_ICON_TILE      0xE505
 #define TAG_HUD_ITEM_ICON_PAL       0xE506
 
@@ -233,7 +234,13 @@ void CreateOverworldHud(void)
     };
 
     if (FuncIsActiveTask(Task_OverworldHud))
+    {
+        // Reload all HUD palettes in case they were overwritten by another
+        // scene (e.g. battle, start menu) while the HUD task persisted.
+        DestroyHudSprites();
+        CreateHudSprites();
         return;
+    }
 
     sOverworldHud.pokemonNameWindowId = AddWindow(&sNameWindow);
     sOverworldHud.moneyWindowId = AddWindow(&sMoneyWindow);

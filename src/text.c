@@ -96,6 +96,7 @@ struct
 };
 
 const u8 gKeypadIconTiles[] = INCBIN_U8("graphics/fonts/keypad_icons.4bpp");
+const u8 gHudFontTiles[] = INCBIN_U8("graphics/fonts/hudfont.4bpp");
 
 static const u16 sFontSmallLatinGlyphs[] = INCBIN_U16("graphics/fonts/latin_small.latfont");
 static const u8 sFontSmallLatinGlyphWidths[] = 

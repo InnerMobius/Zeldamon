@@ -94,6 +94,9 @@ $(FONTGFXDIR)/braille.fwjpnfont: $(FONTGFXDIR)/braille.png
 $(FONTGFXDIR)/japanese_bold.fwjpnfont: $(FONTGFXDIR)/japanese_bold.png
 	$(GFX) $< $@
 
+$(FONTGFXDIR)/hudfont.4bpp: $(FONTGFXDIR)/hudfont.png
+	$(GFX) $< $@
+
 graphics/title_screen/pokemon_logo.gbapal: %.gbapal: %.pal
 	$(GFX) $< $@ -num_colors 224
 

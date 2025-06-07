@@ -144,6 +144,7 @@ extern u8 gStringVar3[];
 extern u8 gStringVar4[];
 
 extern const u8 gKeypadIconTiles[];
+extern const u8 gHudFontTiles[];
 
 void SetFontsPointer(const struct FontInfo *fonts);
 void DeactivateAllTextPrinters(void);

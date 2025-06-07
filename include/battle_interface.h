@@ -49,6 +49,7 @@ enum
 #define TAG_PARTY_SUMMARY_BALL_OPPONENT_TILE    55061
 
 #define TAG_HEALTHBOX_PAL                       TAG_HEALTHBOX_PLAYER1_TILE
+// Palette tag shared by healthbox elements and the HUD font.
 #define TAG_HEALTHBAR_PAL                       TAG_HEALTHBAR_PLAYER1_TILE
 
 enum

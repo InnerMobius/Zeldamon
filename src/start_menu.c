@@ -34,6 +34,7 @@
 #include "option_menu.h"
 #include "save_menu_util.h"
 #include "help_system.h"
+#include "overworld_hud.h"
 #include "constants/songs.h"
 #include "constants/field_weather.h"
 
@@ -387,7 +388,11 @@ void Task_StartMenuHandleInput(u8 taskId)
         break;
     case 1:
         if (sStartMenuCallback() == TRUE)
+		{
             DestroyTask(taskId);
+            if (CanShowOverworldHud())
+                CreateOverworldHud();
+        }
         break;
     }
 }

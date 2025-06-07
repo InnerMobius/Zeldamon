@@ -331,20 +331,25 @@ static void CreateHudSprites(void)
         sOverworldHud.pokeballSpriteIds[i] = CreateSprite(&sSpriteTemplate_OverworldBall, i * 8 + 8, 38, 0);
 
     if (gSaveBlock1Ptr->registeredItem != ITEM_NONE)
-	{
+    {
         sOverworldHud.itemIconSpriteId = AddItemIconObject(TAG_HUD_ITEM_ICON_TILE, TAG_HUD_ITEM_ICON_PAL, gSaveBlock1Ptr->registeredItem);
-        if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
+        if (sOverworldHud.itemIconSpriteId != MAX_SPRITES)
         {
             struct Sprite *icon = &gSprites[sOverworldHud.itemIconSpriteId];
             icon->x = 216;
             icon->y = 18;
         }
+        else
+        {
+            sOverworldHud.itemIconSpriteId = SPRITE_NONE;
+        }
+
         sOverworldHud.registeredItemId = gSaveBlock1Ptr->registeredItem;
     }	
     else
     {
         sOverworldHud.itemIconSpriteId = SPRITE_NONE;
-	        sOverworldHud.registeredItemId = ITEM_NONE;
+        sOverworldHud.registeredItemId = ITEM_NONE;
     }
 
     for (i = 0; i < 6; i++)
@@ -408,11 +413,15 @@ static void UpdateHud(void)
         if (gSaveBlock1Ptr->registeredItem != ITEM_NONE)
         {
             sOverworldHud.itemIconSpriteId = AddItemIconObject(TAG_HUD_ITEM_ICON_TILE, TAG_HUD_ITEM_ICON_PAL, gSaveBlock1Ptr->registeredItem);
-            if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
+            if (sOverworldHud.itemIconSpriteId != MAX_SPRITES)
             {
                 struct Sprite *icon = &gSprites[sOverworldHud.itemIconSpriteId];
                 icon->x = 216;
                 icon->y = 18;
+            }
+            else
+            {
+                sOverworldHud.itemIconSpriteId = SPRITE_NONE;
             }
         }
 

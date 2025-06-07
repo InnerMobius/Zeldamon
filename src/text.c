@@ -18,12 +18,14 @@ static void DecompressGlyph_NormalCopy1(u16 glyphId, bool32 isJapanese);
 static void DecompressGlyph_NormalCopy2(u16 glyphId, bool32 isJapanese);
 static void DecompressGlyph_Male(u16 glyphId, bool32 isJapanese);
 static void DecompressGlyph_Bold(u16 glyphId);
+static void DecompressGlyph_Hud(u16 glyphId);
 static s32 GetGlyphWidth_Small(u16 glyphId, bool32 isJapanese);
 static s32 GetGlyphWidth_NormalCopy1(u16 glyphId, bool32 isJapanese);
 static s32 GetGlyphWidth_Normal(u16 glyphId, bool32 isJapanese);
 static s32 GetGlyphWidth_NormalCopy2(u16 glyphId, bool32 isJapanese);
 static s32 GetGlyphWidth_Male(u16 glyphId, bool32 isJapanese);
 static s32 GetGlyphWidth_Female(u16 glyphId, bool32 isJapanese);
+static s32 GetGlyphWidth_Hud(u16 glyphId, bool32 isJapanese);
 static void SpriteCB_TextCursor(struct Sprite *sprite);
 
 COMMON_DATA TextFlags gTextFlags = {0};
@@ -31,6 +33,7 @@ COMMON_DATA TextFlags gTextFlags = {0};
 static const u8 sDownArrowTiles[]    = INCBIN_U8("graphics/fonts/down_arrows.4bpp");
 static const u8 sDoubleArrowTiles1[] = INCBIN_U8("graphics/fonts/down_arrow_3.4bpp");
 static const u8 sDoubleArrowTiles2[] = INCBIN_U8("graphics/fonts/down_arrow_4.4bpp");
+const u8 gHudFontTiles[] = INCBIN_U8("graphics/fonts/hudfont.4bpp");
 
 static const u8 sDownArrowYCoords[]           = { 0, 16, 32, 16 };
 static const u8 sWindowVerticalScrollSpeeds[] = {
@@ -46,7 +49,8 @@ static const struct GlyphWidthFunc sGlyphWidthFuncs[] = {
     { FONT_NORMAL_COPY_2, GetGlyphWidth_NormalCopy2 },
     { FONT_MALE,          GetGlyphWidth_Male },
     { FONT_FEMALE,        GetGlyphWidth_Female },
-    { FONT_BRAILLE,       GetGlyphWidth_Braille }
+    { FONT_BRAILLE,       GetGlyphWidth_Braille },
+    { FONT_HUD,           GetGlyphWidth_Hud }
 };
 
 static const struct SpriteSheet sSpriteSheets_TextCursor[] =
@@ -456,6 +460,18 @@ u16 FontFunc_Female(struct TextPrinter *textPrinter)
     return RenderText(textPrinter);
 }
 
+u16 FontFunc_Hud(struct TextPrinter *textPrinter)
+{
+    struct TextPrinterSubStruct *subStruct = &textPrinter->subUnion.sub;
+
+    if (subStruct->hasGlyphIdBeenSet == 0)
+    {
+        textPrinter->subUnion.sub.glyphId = FONT_HUD;
+        subStruct->hasGlyphIdBeenSet = 1;
+    }
+    return RenderText(textPrinter);
+}
+
 void TextPrinterInitDownArrowCounters(struct TextPrinter *textPrinter)
 {
     struct TextPrinterSubStruct *subStruct = &textPrinter->subUnion.sub;
@@ -832,8 +848,11 @@ u16 RenderText(struct TextPrinter *textPrinter)
         case FONT_MALE:
             DecompressGlyph_Male(currChar, textPrinter->japanese);
             break;
-        case FONT_FEMALE:
+         case FONT_FEMALE:
             DecompressGlyph_Female(currChar, textPrinter->japanese);
+            break;
+        case FONT_HUD:
+            DecompressGlyph_Hud(currChar);
             break;
         }
 
@@ -1693,4 +1712,16 @@ static void DecompressGlyph_Bold(u16 glyphId)
     DecompressGlyphTile(glyphs + 0x80, (u16 *)(gGlyphInfo.pixels + 0x40));
     gGlyphInfo.width = 8;
     gGlyphInfo.height = 12;
+}
+
+static void DecompressGlyph_Hud(u16 glyphId)
+{
+    CpuCopy32(gHudFontTiles + glyphId * 0x20, gGlyphInfo.pixels, 0x20);
+    gGlyphInfo.width = 8;
+    gGlyphInfo.height = 8;
+}
+
+static s32 GetGlyphWidth_Hud(u16 glyphId, bool32 isJapanese)
+{
+    return 8;
 }

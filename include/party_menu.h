@@ -27,7 +27,7 @@ extern u8 gSelectedOrderFromParty[3];
 extern u8 gBattlePartyCurrentOrder[PARTY_SIZE / 2];
 
 extern const struct CompressedSpriteSheet sSpriteSheet_MenuPokeballSmall;
-extern const struct SpritePalette sSpritePalette_MenuPokeball;
+extern const struct CompressedSpritePalette sSpritePalette_MenuPokeball;
 extern const struct SpriteTemplate sSpriteTemplate_MenuPokeballSmall;
 extern const struct SpriteTemplate sSpriteTemplate_MenuPokeball;
 

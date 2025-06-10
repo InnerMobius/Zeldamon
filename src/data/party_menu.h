@@ -759,7 +759,7 @@ static const union AnimCmd *const sSpriteAnimTable_MenuPokeball[] =
 
 static const struct CompressedSpriteSheet sSpriteSheet_MenuPokeball =
 {
-    gPartyMenuPokeball_Gfx, 0x200, 0x04b0
+    gPartyMenuPokeball_Gfx, 0x400, 0x04b0
 };
 
 static const struct CompressedSpritePalette sSpritePalette_MenuPokeball =

@@ -387,8 +387,7 @@ static void DestroyHudSprites(void)
     FreeSpriteTilesByTag(TAG_OW_HP_BAR_GREEN);
     FreeSpriteTilesByTag(TAG_OW_HP_BAR_YELLOW);
     FreeSpriteTilesByTag(TAG_OW_HP_BAR_RED);
-    // Ensure palette slot is freed when the HUD is not in use
-    FreeSpritePaletteByTag(TAG_OW_HP_BAR_PAL);
+    // Palette is shared with the battle interface, so it must remain allocated
 }
 
 bool8 CanShowOverworldHud(void)

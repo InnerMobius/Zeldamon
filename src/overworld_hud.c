@@ -387,7 +387,8 @@ static void DestroyHudSprites(void)
     FreeSpriteTilesByTag(TAG_OW_HP_BAR_GREEN);
     FreeSpriteTilesByTag(TAG_OW_HP_BAR_YELLOW);
     FreeSpriteTilesByTag(TAG_OW_HP_BAR_RED);
-    // Palette shared with the battle interface; do not free here
+    // Ensure palette slot is freed when the HUD is not in use
+    FreeSpritePaletteByTag(TAG_OW_HP_BAR_PAL);
 }
 
 bool8 CanShowOverworldHud(void)
@@ -439,7 +440,7 @@ static void UpdateHud(void)
 
     FillWindowPixelBuffer(sOverworldHud.moneyWindowId, PIXEL_FILL(1));
     ConvertIntToDecimalStringN(buf, GetMoney(&gSaveBlock1Ptr->money), STR_CONV_MODE_RIGHT_ALIGN, 6);
-    AddTextPrinterParameterized(sOverworldHud.moneyWindowId, FONT_HUD, buf, 8, 0, 0, NULL);
+    AddTextPrinterParameterized(sOverworldHud.moneyWindowId, FONT_NORMAL, buf, 8, 0, 0, NULL);
     CopyWindowToVram(sOverworldHud.moneyWindowId, COPYWIN_GFX);
 
     if (species == SPECIES_NONE)
@@ -479,7 +480,7 @@ static void UpdateHud(void)
     buf[POKEMON_NAME_LENGTH] = EOS;
 
     FillWindowPixelBuffer(sOverworldHud.pokemonNameWindowId, PIXEL_FILL(1));
-    AddTextPrinterParameterized(sOverworldHud.pokemonNameWindowId, FONT_HUD, buf, 0, 0, 0, NULL);
+    AddTextPrinterParameterized(sOverworldHud.pokemonNameWindowId, FONT_NORMAL, buf, 0, 0, 0, NULL);
 
     UpdatePartyBallIcons();
 	UpdateHpBar();

@@ -35,6 +35,7 @@
 #include "new_menu_helpers.h"
 #include "metatile_behavior.h"
 #include "overworld.h"
+#include "overworld_hud.h"
 #include "party_menu.h"
 #include "player_pc.h"
 #include "pokedex.h"
@@ -5431,6 +5432,7 @@ static void TryTutorSelectedMon(u8 taskId)
 
 void CB2_PartyMenuFromStartMenu(void)
 {
+    DestroyOverworldHud();
     InitPartyMenu(PARTY_MENU_TYPE_FIELD, PARTY_LAYOUT_SINGLE, PARTY_ACTION_CHOOSE_MON, FALSE, PARTY_MSG_CHOOSE_MON, Task_HandleChooseMonInput, CB2_ReturnToFieldWithOpenMenu);
 }
 

@@ -40,11 +40,30 @@
 #define TAG_HUD_ITEM_ICON_TILE      0xE505
 #define TAG_HUD_ITEM_ICON_PAL       0xE506
 
+// Hud graphics labels. Still missing the small key, time and bomb counter.
+// May later also include a boss key icon as well.
+#define HUD_GFX_BASE_TILE 0x250
+#define HUD_MONEY_X 1
+#define HUD_MONEY_Y 17
+
+enum {
+    HUD_TILE_BLANK,
+    HUD_TILE_DIGIT_0,
+    HUD_TILE_DIGIT_1,
+    HUD_TILE_DIGIT_2,
+    HUD_TILE_DIGIT_3,
+    HUD_TILE_DIGIT_4,
+    HUD_TILE_DIGIT_5,
+    HUD_TILE_DIGIT_6,
+    HUD_TILE_DIGIT_7,
+    HUD_TILE_DIGIT_8,
+    HUD_TILE_DIGIT_9,
+    HUD_TILE_RUPEE = 11
+};
+
 struct OverworldHud
 {
     u8 taskId;
-    u8 pokemonNameWindowId;
-    u8 moneyWindowId;
     u8 buttonWindowId;
     u8 hpBarSpriteIds[6];
     u8 pokeballSpriteIds[PARTY_SIZE];
@@ -62,6 +81,8 @@ static void UpdateHud(void);
 static bool8 ShouldShowOverworldHud(void);
 static void UpdateHpBar(void);
 static void UpdatePartyBallIcons(void);
+static void DrawMoney(u32 money);
+static void ClearMoneyDisplay(void);
 
 #define TAG_OW_HP_BAR_GREEN   0x5500
 #define TAG_OW_HP_BAR_YELLOW  0x5501
@@ -205,24 +226,6 @@ static const struct SpriteTemplate sSpriteTemplate_OverworldBall = {
 void CreateOverworldHud(void)
 {
 
-    static const struct WindowTemplate sNameWindow = {
-        .bg = 0,
-        .tilemapLeft = 1,
-        .tilemapTop = 2,
-        .width = 10,
-        .height = 2,
-        .paletteNum = 15,
-        .baseBlock = 0x1F0
-    };
-    static const struct WindowTemplate sMoneyWindow = {
-        .bg = 0,
-        .tilemapLeft = 1,
-        .tilemapTop = 17,
-        .width = 10,
-        .height = 2,
-        .paletteNum = 15,
-        .baseBlock = 0x210
-    };
     static const struct WindowTemplate sButtonWindow = {
         .bg = 0,
         .tilemapLeft = 25,
@@ -239,26 +242,23 @@ void CreateOverworldHud(void)
         // scene (e.g. battle, start menu) while the HUD task persisted.
         DestroyHudSprites();
         CreateHudSprites();
+		LoadPalette(gBattleInterface_Healthbox_Pal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
+        LoadBgTiles(0, gOverworldHudElements_Gfx, sizeof(gOverworldHudElements_Gfx), HUD_GFX_BASE_TILE);
         return;
     }
 
-    sOverworldHud.pokemonNameWindowId = AddWindow(&sNameWindow);
-    sOverworldHud.moneyWindowId = AddWindow(&sMoneyWindow);
     sOverworldHud.buttonWindowId = AddWindow(&sButtonWindow);
 
-    PutWindowTilemap(sOverworldHud.pokemonNameWindowId);
-    PutWindowTilemap(sOverworldHud.moneyWindowId);
     PutWindowTilemap(sOverworldHud.buttonWindowId);
 
-    FillWindowPixelBuffer(sOverworldHud.pokemonNameWindowId, PIXEL_FILL(1));
-    FillWindowPixelBuffer(sOverworldHud.moneyWindowId, PIXEL_FILL(1));
     FillWindowPixelBuffer(sOverworldHud.buttonWindowId, PIXEL_FILL(0));
+	
+	LoadPalette(gBattleInterface_Healthbox_Pal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
+    LoadBgTiles(0, gOverworldHudElements_Gfx, sizeof(gOverworldHudElements_Gfx), HUD_GFX_BASE_TILE);
 
     sOverworldHud.taskId = CreateTask(Task_OverworldHud, 80);
-	sOverworldHud.visible = TRUE;
+        sOverworldHud.visible = TRUE;
     CreateHudSprites();
-    CopyWindowToVram(sOverworldHud.pokemonNameWindowId, COPYWIN_FULL);
-    CopyWindowToVram(sOverworldHud.moneyWindowId, COPYWIN_FULL);
     CopyWindowToVram(sOverworldHud.buttonWindowId, COPYWIN_FULL);
 }
 
@@ -268,11 +268,8 @@ void DestroyOverworldHud(void)
     {
         DestroyTask(sOverworldHud.taskId);
         DestroyHudSprites();
-        ClearWindowTilemap(sOverworldHud.pokemonNameWindowId);
-        ClearWindowTilemap(sOverworldHud.moneyWindowId);
+		ClearMoneyDisplay();
         ClearWindowTilemap(sOverworldHud.buttonWindowId);
-        RemoveWindow(sOverworldHud.pokemonNameWindowId);
-        RemoveWindow(sOverworldHud.moneyWindowId);
         RemoveWindow(sOverworldHud.buttonWindowId);
         memset(&sOverworldHud, 0, sizeof(sOverworldHud));
     }
@@ -288,9 +285,8 @@ static void Task_OverworldHud(u8 taskId)
     {
         sOverworldHud.visible = TRUE;
 
-        PutWindowTilemap(sOverworldHud.pokemonNameWindowId);
-        PutWindowTilemap(sOverworldHud.moneyWindowId);
         PutWindowTilemap(sOverworldHud.buttonWindowId);
+		DrawMoney(GetMoney(&gSaveBlock1Ptr->money));
 
         for (i = 0; i < PARTY_SIZE; i++)
             if (sOverworldHud.pokeballSpriteIds[i] != SPRITE_NONE)
@@ -309,8 +305,6 @@ static void Task_OverworldHud(u8 taskId)
     {
         sOverworldHud.visible = FALSE;
 
-        ClearWindowTilemap(sOverworldHud.pokemonNameWindowId);
-        ClearWindowTilemap(sOverworldHud.moneyWindowId);
         ClearWindowTilemap(sOverworldHud.buttonWindowId);
 
         for (i = 0; i < PARTY_SIZE; i++)
@@ -399,7 +393,6 @@ bool8 CanShowOverworldHud(void)
 static void UpdateHud(void)
 {
     struct Pokemon *mon = &gPlayerParty[0];
-    u8 buf[POKEMON_NAME_LENGTH + 1];
     u16 species;
     u8 i;
 
@@ -436,18 +429,12 @@ static void UpdateHud(void)
         sOverworldHud.registeredItemId = gSaveBlock1Ptr->registeredItem;
     }
 	
-    PutWindowTilemap(sOverworldHud.moneyWindowId);
-
-    FillWindowPixelBuffer(sOverworldHud.moneyWindowId, PIXEL_FILL(1));
-    ConvertIntToDecimalStringN(buf, GetMoney(&gSaveBlock1Ptr->money), STR_CONV_MODE_RIGHT_ALIGN, 6);
-    AddTextPrinterParameterized(sOverworldHud.moneyWindowId, FONT_NORMAL, buf, 8, 0, 0, NULL);
-    CopyWindowToVram(sOverworldHud.moneyWindowId, COPYWIN_GFX);
+    DrawMoney(GetMoney(&gSaveBlock1Ptr->money));
 
     if (species == SPECIES_NONE)
     {
-        ClearWindowTilemap(sOverworldHud.pokemonNameWindowId);
+        ClearMoneyDisplay();
         ClearWindowTilemap(sOverworldHud.buttonWindowId);
-        CopyWindowToVram(sOverworldHud.pokemonNameWindowId, COPYWIN_MAP);
         CopyWindowToVram(sOverworldHud.buttonWindowId, COPYWIN_MAP);
 
         if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
@@ -462,9 +449,6 @@ static void UpdateHud(void)
         return;
     }
 
-
-    PutWindowTilemap(sOverworldHud.pokemonNameWindowId);
-    PutWindowTilemap(sOverworldHud.moneyWindowId);
     PutWindowTilemap(sOverworldHud.buttonWindowId);
 
     if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
@@ -475,12 +459,6 @@ static void UpdateHud(void)
     for (i = 0; i < 6; i++)
         if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
             gSprites[sOverworldHud.hpBarSpriteIds[i]].invisible = FALSE;
-
-    GetMonData(mon, MON_DATA_NICKNAME, buf);
-    buf[POKEMON_NAME_LENGTH] = EOS;
-
-    FillWindowPixelBuffer(sOverworldHud.pokemonNameWindowId, PIXEL_FILL(1));
-    AddTextPrinterParameterized(sOverworldHud.pokemonNameWindowId, FONT_NORMAL, buf, 0, 0, 0, NULL);
 
     UpdatePartyBallIcons();
 	UpdateHpBar();
@@ -569,6 +547,32 @@ static void UpdatePartyBallIcons(void)
             gSprites[sOverworldHud.pokeballSpriteIds[i]].oam.tileNum = baseTile;
         }
     }
+}
+
+static void DrawMoney(u32 money)
+{
+    u8 i;
+    u16 tileBase = GetBgAttribute(0, BG_ATTR_BASETILE) + HUD_GFX_BASE_TILE;
+
+    FillBgTilemapBufferRect(0, tileBase + HUD_TILE_BLANK, HUD_MONEY_X, HUD_MONEY_Y, 7, 1, 15);
+
+    WriteSequenceToBgTilemapBuffer(0, tileBase + HUD_TILE_RUPEE, HUD_MONEY_X, HUD_MONEY_Y, 1, 1, 15, 1);
+
+    for (i = 0; i < 6; i++)
+    {
+        u8 digit = money % 10;
+        money /= 10;
+        WriteSequenceToBgTilemapBuffer(0, tileBase + HUD_TILE_DIGIT_0 + digit, HUD_MONEY_X + 6 - i, HUD_MONEY_Y, 1, 1, 15, 1);
+    }
+
+    ScheduleBgCopyTilemapToVram(0);
+}
+
+static void ClearMoneyDisplay(void)
+{
+    u16 tileBase = GetBgAttribute(0, BG_ATTR_BASETILE) + HUD_GFX_BASE_TILE;
+    FillBgTilemapBufferRect(0, tileBase + HUD_TILE_BLANK, HUD_MONEY_X, HUD_MONEY_Y, 7, 1, 15);
+    ScheduleBgCopyTilemapToVram(0);
 }
 
 static bool8 ShouldShowOverworldHud(void)

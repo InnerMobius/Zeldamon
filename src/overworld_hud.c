@@ -45,7 +45,7 @@
 // May later also include a boss key icon as well.
 #define HUD_GFX_BASE_TILE 0x250
 #define HUD_MONEY_X 1
-#define HUD_MONEY_Y 17
+#define HUD_MONEY_Y 18
 
 enum {
     HUD_TILE_BLANK,
@@ -62,6 +62,11 @@ enum {
     HUD_TILE_RUPEE = 11
 };
 
+#define HUD_TYPE_ICON_BASE_TILE (HUD_GFX_BASE_TILE + (0x2C0 / TILE_SIZE_4BPP))
+#define HUD_TYPE_ICON_X 1
+#define HUD_TYPE_ICON_Y 2
+#define HUD_TYPE_ICON_PAL 14
+
 struct OverworldHud
 {
     u8 taskId;
@@ -70,7 +75,10 @@ struct OverworldHud
     u8 pokeballSpriteIds[PARTY_SIZE];
     u8 itemIconSpriteId;
     u16 registeredItemId;
-        bool8 visible;
+    u8 activePartyIdx;
+    u8 type1;
+    u8 type2;
+    bool8 visible;
 };
 
 static EWRAM_DATA struct OverworldHud sOverworldHud = {0};
@@ -80,10 +88,34 @@ static void CreateHudSprites(void);
 static void DestroyHudSprites(void);
 static void UpdateHud(void);
 static bool8 ShouldShowOverworldHud(void);
-static void UpdateHpBar(void);
+static void UpdateHpBar(struct Pokemon *mon);
 static void UpdatePartyBallIcons(void);
 static void DrawMoney(u32 money);
 static void ClearMoneyDisplay(void);
+
+static const u16 sTypeIconOffsets[NUMBER_OF_MON_TYPES] = {
+    0x20, // Normal
+    0x64, // Fighting
+    0x60, // Flying
+    0x80, // Poison
+    0x48, // Ground
+    0x44, // Rock
+    0x6C, // Bug
+    0x68, // Ghost
+    0x88, // Steel
+    0xA4, // Mystery
+    0x24, // Fire
+    0x28, // Water
+    0x2C, // Grass
+    0x40, // Electric
+    0x84, // Psychic
+    0x4C, // Ice
+    0xA0, // Dragon
+    0x8C  // Dark
+};
+static s8 GetFirstViablePartyIndex(void);
+static void DrawTypeIconsForMon(u8 monId);
+static void ClearTypeIcons(void);
 
 #define TAG_OW_HP_BAR_GREEN   0x5500
 #define TAG_OW_HP_BAR_YELLOW  0x5501
@@ -226,7 +258,7 @@ static const struct SpriteTemplate sSpriteTemplate_OverworldBall = {
 
 void CreateOverworldHud(void)
 {
-
+    u8 i;
     static const struct WindowTemplate sButtonWindow = {
         .bg = 0,
         .tilemapLeft = 25,
@@ -243,8 +275,14 @@ void CreateOverworldHud(void)
         // scene (e.g. battle, start menu) while the HUD task persisted.
         DestroyHudSprites();
         CreateHudSprites();
-		LoadPalette(gBattleInterface_Healthbox_Pal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
+        LoadPalette(gBattleInterface_Healthbox_Pal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
+        LoadPalette(gMenuInfoElements2_Pal, BG_PLTT_ID(14), PLTT_SIZE_4BPP);
+        for (i = 0; i < NUMBER_OF_MON_TYPES; i++)
+            LoadBgTiles(0, gMenuInfoElements_Gfx + sTypeIconOffsets[i] * TILE_SIZE_4BPP,
+                        4 * TILE_SIZE_4BPP, HUD_TYPE_ICON_BASE_TILE + i * 4);
         LoadBgTiles(0, gOverworldHudElements_Gfx, 0x2C0, HUD_GFX_BASE_TILE);
+        sOverworldHud.activePartyIdx = PARTY_SIZE;
+        ClearTypeIcons();
         return;
     }
 
@@ -256,6 +294,13 @@ void CreateOverworldHud(void)
 	
 	LoadPalette(gBattleInterface_Healthbox_Pal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
     LoadBgTiles(0, gOverworldHudElements_Gfx, 0x2C0, HUD_GFX_BASE_TILE);
+    LoadPalette(gMenuInfoElements2_Pal, BG_PLTT_ID(14), PLTT_SIZE_4BPP);
+    for (i = 0; i < NUMBER_OF_MON_TYPES; i++)
+        LoadBgTiles(0, gMenuInfoElements_Gfx + sTypeIconOffsets[i] * TILE_SIZE_4BPP,
+                    4 * TILE_SIZE_4BPP, HUD_TYPE_ICON_BASE_TILE + i * 4);
+
+    sOverworldHud.activePartyIdx = PARTY_SIZE;
+    ClearTypeIcons();
 
     sOverworldHud.taskId = CreateTask(Task_OverworldHud, 80);
         sOverworldHud.visible = TRUE;
@@ -279,12 +324,17 @@ void DestroyOverworldHud(void)
 static void Task_OverworldHud(u8 taskId)
 {
     u8 i;
-	struct Pokemon *mon = &gPlayerParty[0];
-    u16 species = GetMonData(mon, MON_DATA_SPECIES);
+    s8 monId = GetFirstViablePartyIndex();
 
-    if (ShouldShowOverworldHud() && species != SPECIES_NONE)
+    if (ShouldShowOverworldHud() && monId >= 0)
     {
+        struct Pokemon *mon = &gPlayerParty[monId];
         sOverworldHud.visible = TRUE;
+        if (sOverworldHud.activePartyIdx != monId)
+        {
+            sOverworldHud.activePartyIdx = monId;
+            DrawTypeIconsForMon(monId);
+        }
 
         PutWindowTilemap(sOverworldHud.buttonWindowId);
 		DrawMoney(GetMoney(&gSaveBlock1Ptr->money));
@@ -305,6 +355,12 @@ static void Task_OverworldHud(u8 taskId)
     else
     {
         sOverworldHud.visible = FALSE;
+
+        if (sOverworldHud.activePartyIdx != PARTY_SIZE)
+        {
+            sOverworldHud.activePartyIdx = PARTY_SIZE;
+            ClearTypeIcons();
+        }
 
         ClearWindowTilemap(sOverworldHud.buttonWindowId);
 
@@ -393,14 +449,19 @@ bool8 CanShowOverworldHud(void)
 
 static void UpdateHud(void)
 {
-    struct Pokemon *mon = &gPlayerParty[0];
+    struct Pokemon *mon;
     u16 species;
     u8 i;
 
     if (!sOverworldHud.visible)
         return;
 
-    species = GetMonData(mon, MON_DATA_SPECIES);
+    if (sOverworldHud.activePartyIdx < PARTY_SIZE)
+        mon = &gPlayerParty[sOverworldHud.activePartyIdx];
+    else
+        mon = NULL;
+
+    species = mon ? GetMonData(mon, MON_DATA_SPECIES) : SPECIES_NONE;
 
     if (gSaveBlock1Ptr->registeredItem != sOverworldHud.registeredItemId)
     {
@@ -447,7 +508,8 @@ static void UpdateHud(void)
             if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
                 gSprites[sOverworldHud.hpBarSpriteIds[i]].invisible = TRUE;
 
-        return;
+        ClearTypeIcons();
+		return;
     }
 
     PutWindowTilemap(sOverworldHud.buttonWindowId);
@@ -462,12 +524,12 @@ static void UpdateHud(void)
             gSprites[sOverworldHud.hpBarSpriteIds[i]].invisible = FALSE;
 
     UpdatePartyBallIcons();
-	UpdateHpBar();
+    if (sOverworldHud.activePartyIdx < PARTY_SIZE)
+        UpdateHpBar(&gPlayerParty[sOverworldHud.activePartyIdx]);
 }
 
-static void UpdateHpBar(void)
+static void UpdateHpBar(struct Pokemon *mon)
 {
-    struct Pokemon *mon = &gPlayerParty[0];
     u32 curHp = GetMonData(mon, MON_DATA_HP);
     u32 maxHp = GetMonData(mon, MON_DATA_MAX_HP);
     u8 numWholeHpBarTiles = 0;
@@ -541,7 +603,7 @@ static void UpdatePartyBallIcons(void)
         }
         else if (GetMonData(&gPlayerParty[i], MON_DATA_HP) == 0)
         {
-            gSprites[sOverworldHud.pokeballSpriteIds[i]].oam.tileNum = baseTile + 3;
+            gSprites[sOverworldHud.pokeballSpriteIds[i]].oam.tileNum = baseTile + 2;
         }
         else
         {
@@ -573,6 +635,51 @@ static void ClearMoneyDisplay(void)
 {
     u16 tileBase = GetBgAttribute(0, BG_ATTR_BASETILE) + HUD_GFX_BASE_TILE;
     FillBgTilemapBufferRect(0, tileBase + HUD_TILE_BLANK, HUD_MONEY_X, HUD_MONEY_Y, 7, 1, 15);
+    ScheduleBgCopyTilemapToVram(0);
+}
+
+static s8 GetFirstViablePartyIndex(void)
+{
+    u8 i;
+    for (i = 0; i < PARTY_SIZE; i++)
+    {
+        if (GetMonData(&gPlayerParty[i], MON_DATA_SPECIES) != SPECIES_NONE
+            && !GetMonData(&gPlayerParty[i], MON_DATA_IS_EGG)
+            && GetMonData(&gPlayerParty[i], MON_DATA_HP) != 0)
+            return i;
+    }
+
+    return -1;
+}
+
+static void ClearTypeIcons(void)
+{
+    u16 tileBase = GetBgAttribute(0, BG_ATTR_BASETILE) + HUD_GFX_BASE_TILE;
+    FillBgTilemapBufferRect(0, tileBase + HUD_TILE_BLANK, HUD_TYPE_ICON_X, HUD_TYPE_ICON_Y, 8, 1, HUD_TYPE_ICON_PAL);
+    ScheduleBgCopyTilemapToVram(0);
+}
+
+static void DrawTypeIconsForMon(u8 monId)
+{
+    u16 tileBase = GetBgAttribute(0, BG_ATTR_BASETILE) + HUD_TYPE_ICON_BASE_TILE;
+    u16 species = GetMonData(&gPlayerParty[monId], MON_DATA_SPECIES);
+    u8 type1 = gSpeciesInfo[species].types[0];
+    u8 type2 = gSpeciesInfo[species].types[1];
+
+    sOverworldHud.type1 = type1;
+    sOverworldHud.type2 = type2;
+
+    WriteSequenceToBgTilemapBuffer(0, tileBase + type1 * 4, HUD_TYPE_ICON_X, HUD_TYPE_ICON_Y, 4, 1, HUD_TYPE_ICON_PAL, 1);
+
+    if (type2 == TYPE_NONE || type2 == type1)
+    {
+        FillBgTilemapBufferRect(0, tileBase + HUD_TILE_BLANK, HUD_TYPE_ICON_X + 4, HUD_TYPE_ICON_Y, 4, 1, HUD_TYPE_ICON_PAL);
+    }
+    else
+    {
+        WriteSequenceToBgTilemapBuffer(0, tileBase + type2 * 4, HUD_TYPE_ICON_X + 4, HUD_TYPE_ICON_Y, 4, 1, HUD_TYPE_ICON_PAL, 1);
+    }
+
     ScheduleBgCopyTilemapToVram(0);
 }
 

@@ -79,8 +79,6 @@ struct OverworldHud
     u8 typeIconSpriteIds[2];
     u16 registeredItemId;
     u8 activePartyIdx;
-    u8 type1;
-    u8 type2;
     bool8 visible;
 };
 
@@ -97,7 +95,12 @@ static void DrawMoney(u32 money);
 static void ClearMoneyDisplay(void);
 static void LoadTypeIconGfx(void);
 
-static const u16 sTypeIconOffsets[NUMBER_OF_MON_TYPES] = {
+// Offsets into gMenuInfoElements_Gfx for the 8-tile type icons.
+// These values correspond to the layout of graphics/interface/menu_info.png.
+// Icons are not stored sequentially in the sheet, so new icons must update
+// this table rather than assuming TYPE_* + 1 order.
+static const u16 sTypeIconOffsets[NUMBER_OF_MON_TYPES] =
+{
     0x20, // Normal
     0x64, // Fighting
     0x60, // Flying
@@ -563,7 +566,7 @@ static void UpdateHud(void)
                 gSprites[sOverworldHud.hpBarSpriteIds[i]].invisible = TRUE;
 
         ClearTypeIcons();
-		return;
+        return;
     }
 
     PutWindowTilemap(sOverworldHud.buttonWindowId);
@@ -722,9 +725,6 @@ static void DrawTypeIconsForMon(u8 monId)
     u16 species = GetMonData(&gPlayerParty[monId], MON_DATA_SPECIES);
     u8 type1 = gSpeciesInfo[species].types[0];
     u8 type2 = gSpeciesInfo[species].types[1];
-
-    sOverworldHud.type1 = type1;
-    sOverworldHud.type2 = type2;
 
     if (sOverworldHud.typeIconSpriteIds[0] != SPRITE_NONE)
     {

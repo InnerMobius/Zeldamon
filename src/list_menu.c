@@ -49,6 +49,9 @@ static void ListMenuDrawCursor(struct ListMenu *list);
 static void ListMenuCallSelectionChangedCallback(struct ListMenu *list, u8 onInit);
 static u8 ListMenuAddCursorObject(struct ListMenu *list, u32 cursorKind);
 
+// Lookup table of offsets within graphics/interface/menu_info.png.
+// The file does not store type icons sequentially, so maintain this
+// mapping whenever the sprite sheet layout changes.
 static const struct MoveMenuInfoIcon sMenuInfoIcons[] =
 {   // { width, height, offset }
     [MENU_INFO_ICON_CAUGHT] = { 12, 12, 0x00 },

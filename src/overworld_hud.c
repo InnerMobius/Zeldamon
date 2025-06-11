@@ -759,7 +759,9 @@ static void LoadTypeIconGfx(void)
         CpuCopy16(gMenuInfoElements_Gfx + sTypeIconOffsets[i] * TILE_SIZE_4BPP,
                   buffer,
                   4 * TILE_SIZE_4BPP);
-        CpuCopy16(gMenuInfoElements_Gfx + (sTypeIconOffsets[i] + 0x20) * TILE_SIZE_4BPP,
+        // The bottom row of the icon immediately follows the top row in
+        // menu_info.png. Add only 0x10 tiles (one 8x8 row) to reach it.
+        CpuCopy16(gMenuInfoElements_Gfx + (sTypeIconOffsets[i] + 0x10) * TILE_SIZE_4BPP,
                   buffer + 4 * TILE_SIZE_4BPP,
                   4 * TILE_SIZE_4BPP);
         sheet.tag = TAG_HUD_TYPE_ICON_TILE_BASE + i;

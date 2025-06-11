@@ -465,10 +465,9 @@ static void DestroyHudSprites(void)
     u8 i;
     if (sOverworldHud.itemIconSpriteId != SPRITE_NONE)
     {
-        DestroySprite(&gSprites[sOverworldHud.itemIconSpriteId]);
-        FreeSpriteTilesByTag(TAG_HUD_ITEM_ICON_TILE);
-        FreeSpritePaletteByTag(TAG_HUD_ITEM_ICON_PAL);
-		sOverworldHud.registeredItemId = ITEM_NONE;
+        DestroySpriteAndFreeResources(&gSprites[sOverworldHud.itemIconSpriteId]);
+        sOverworldHud.registeredItemId = ITEM_NONE;
+        sOverworldHud.itemIconSpriteId = SPRITE_NONE;
     }
 
     for (i = 0; i < PARTY_SIZE; i++)

@@ -66,7 +66,7 @@ enum {
 };
 
 // Sprite positions for the type icons
-#define HUD_TYPE_ICON_X 8
+#define HUD_TYPE_ICON_X 16
 #define HUD_TYPE_ICON_Y 24
 
 struct OverworldHud
@@ -486,7 +486,10 @@ static void DestroyHudSprites(void)
 
     for (i = 0; i < 2; i++)
         if (sOverworldHud.typeIconSpriteIds[i] != SPRITE_NONE)
+        {
             DestroySprite(&gSprites[sOverworldHud.typeIconSpriteIds[i]]);
+            sOverworldHud.typeIconSpriteIds[i] = SPRITE_NONE;
+        }
 
     for (i = 0; i < NUMBER_OF_MON_TYPES; i++)
         FreeSpriteTilesByTag(TAG_HUD_TYPE_ICON_TILE_BASE + i);
@@ -747,15 +750,29 @@ static void DrawTypeIconsForMon(u8 monId)
 static void LoadTypeIconGfx(void)
 {
     u8 i;
+    u8 *buffer;
     struct SpriteSheet sheet;
 
+    buffer = Alloc(8 * TILE_SIZE_4BPP);
+    if (buffer == NULL)
+        return;
+
+    sheet.data = buffer;
     sheet.size = 8 * TILE_SIZE_4BPP;
+
     for (i = 0; i < NUMBER_OF_MON_TYPES; i++)
     {
-        sheet.data = gMenuInfoElements_Gfx + sTypeIconOffsets[i] * TILE_SIZE_4BPP;
+        CpuCopy16(gMenuInfoElements_Gfx + sTypeIconOffsets[i] * TILE_SIZE_4BPP,
+                  buffer,
+                  4 * TILE_SIZE_4BPP);
+        CpuCopy16(gMenuInfoElements_Gfx + (sTypeIconOffsets[i] + 0x20) * TILE_SIZE_4BPP,
+                  buffer + 4 * TILE_SIZE_4BPP,
+                  4 * TILE_SIZE_4BPP);
         sheet.tag = TAG_HUD_TYPE_ICON_TILE_BASE + i;
         LoadSpriteSheet(&sheet);
     }
+
+    Free(buffer);
 }
 
 static bool8 ShouldShowOverworldHud(void)

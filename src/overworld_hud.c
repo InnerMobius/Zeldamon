@@ -364,10 +364,7 @@ static void Task_OverworldHud(u8 taskId)
         struct Pokemon *mon = &gPlayerParty[monId];
         sOverworldHud.visible = TRUE;
         if (sOverworldHud.activePartyIdx != monId)
-        {
             sOverworldHud.activePartyIdx = monId;
-            DrawTypeIconsForMon(monId);
-        }
 
         PutWindowTilemap(sOverworldHud.buttonWindowId);
 		DrawMoney(GetMoney(&gSaveBlock1Ptr->money));
@@ -383,9 +380,7 @@ static void Task_OverworldHud(u8 taskId)
             if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
                 gSprites[sOverworldHud.hpBarSpriteIds[i]].invisible = FALSE;
 
-        for (i = 0; i < 2; i++)
-            if (sOverworldHud.typeIconSpriteIds[i] != SPRITE_NONE)
-                gSprites[sOverworldHud.typeIconSpriteIds[i]].invisible = FALSE;
+        DrawTypeIconsForMon(monId);
 
         UpdateHud();
     }
@@ -582,9 +577,8 @@ static void UpdateHud(void)
     for (i = 0; i < 6; i++)
         if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
             gSprites[sOverworldHud.hpBarSpriteIds[i]].invisible = FALSE;
-    for (i = 0; i < 2; i++)
-        if (sOverworldHud.typeIconSpriteIds[i] != SPRITE_NONE)
-            gSprites[sOverworldHud.typeIconSpriteIds[i]].invisible = FALSE;
+
+    DrawTypeIconsForMon(sOverworldHud.activePartyIdx);
 
     UpdatePartyBallIcons();
     if (sOverworldHud.activePartyIdx < PARTY_SIZE)

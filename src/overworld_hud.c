@@ -40,6 +40,9 @@
 // range used by field effects (0x1000+) to ensure palettes don't share slots.
 #define TAG_HUD_ITEM_ICON_TILE      0xE505
 #define TAG_HUD_ITEM_ICON_PAL       0xE506
+// Tags for the type icon sprites. One tiles tag is used per type.
+#define TAG_HUD_TYPE_ICON_TILE_BASE 0xE520
+#define TAG_HUD_TYPE_ICON_PAL       0xE53F
 
 // Hud graphics labels. Still missing the small key, time and bomb counter.
 // May later also include a boss key icon as well.
@@ -62,10 +65,9 @@ enum {
     HUD_TILE_RUPEE = 11
 };
 
-#define HUD_TYPE_ICON_BASE_TILE (HUD_GFX_BASE_TILE + (0x2C0 / TILE_SIZE_4BPP))
-#define HUD_TYPE_ICON_X 1
-#define HUD_TYPE_ICON_Y 2
-#define HUD_TYPE_ICON_PAL 14
+// Sprite positions for the type icons
+#define HUD_TYPE_ICON_X 8
+#define HUD_TYPE_ICON_Y 24
 
 struct OverworldHud
 {
@@ -74,6 +76,7 @@ struct OverworldHud
     u8 hpBarSpriteIds[6];
     u8 pokeballSpriteIds[PARTY_SIZE];
     u8 itemIconSpriteId;
+    u8 typeIconSpriteIds[2];
     u16 registeredItemId;
     u8 activePartyIdx;
     u8 type1;
@@ -92,6 +95,7 @@ static void UpdateHpBar(struct Pokemon *mon);
 static void UpdatePartyBallIcons(void);
 static void DrawMoney(u32 money);
 static void ClearMoneyDisplay(void);
+static void LoadTypeIconGfx(void);
 
 static const u16 sTypeIconOffsets[NUMBER_OF_MON_TYPES] = {
     0x20, // Normal
@@ -256,6 +260,36 @@ static const struct SpriteTemplate sSpriteTemplate_OverworldBall = {
     .callback = SpriteCallbackDummy,
 };
 
+static const struct OamData sOamData_TypeIcon = {
+    .shape = SPRITE_SHAPE(32x16),
+    .size = SPRITE_SIZE(32x16),
+    .priority = 0,
+};
+
+static const union AnimCmd sAnim_TypeIcon[] = {
+    ANIMCMD_FRAME(0, 0),
+    ANIMCMD_END
+};
+
+static const union AnimCmd *const sAnimTable_TypeIcon[] = {
+    sAnim_TypeIcon
+};
+
+static const struct SpritePalette sTypeIconSpritePalette = {
+    gMenuInfoElements2_Pal,
+    TAG_HUD_TYPE_ICON_PAL
+};
+
+static const struct SpriteTemplate sTypeIconSpriteTemplate = {
+    .tileTag = TAG_HUD_TYPE_ICON_TILE_BASE,
+    .paletteTag = TAG_HUD_TYPE_ICON_PAL,
+    .oam = &sOamData_TypeIcon,
+    .anims = sAnimTable_TypeIcon,
+    .images = NULL,
+    .affineAnims = gDummySpriteAffineAnimTable,
+    .callback = SpriteCallbackDummy,
+};
+
 void CreateOverworldHud(void)
 {
     u8 i;
@@ -277,10 +311,8 @@ void CreateOverworldHud(void)
         CreateHudSprites();
         LoadPalette(gBattleInterface_Healthbox_Pal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
         LoadPalette(gMenuInfoElements2_Pal, BG_PLTT_ID(14), PLTT_SIZE_4BPP);
-        for (i = 0; i < NUMBER_OF_MON_TYPES; i++)
-            LoadBgTiles(0, gMenuInfoElements_Gfx + sTypeIconOffsets[i] * TILE_SIZE_4BPP,
-                        4 * TILE_SIZE_4BPP, HUD_TYPE_ICON_BASE_TILE + i * 4);
         LoadBgTiles(0, gOverworldHudElements_Gfx, 0x2C0, HUD_GFX_BASE_TILE);
+        LoadTypeIconGfx();
         sOverworldHud.activePartyIdx = PARTY_SIZE;
         ClearTypeIcons();
         return;
@@ -295,9 +327,7 @@ void CreateOverworldHud(void)
 	LoadPalette(gBattleInterface_Healthbox_Pal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
     LoadBgTiles(0, gOverworldHudElements_Gfx, 0x2C0, HUD_GFX_BASE_TILE);
     LoadPalette(gMenuInfoElements2_Pal, BG_PLTT_ID(14), PLTT_SIZE_4BPP);
-    for (i = 0; i < NUMBER_OF_MON_TYPES; i++)
-        LoadBgTiles(0, gMenuInfoElements_Gfx + sTypeIconOffsets[i] * TILE_SIZE_4BPP,
-                    4 * TILE_SIZE_4BPP, HUD_TYPE_ICON_BASE_TILE + i * 4);
+    LoadTypeIconGfx();
 
     sOverworldHud.activePartyIdx = PARTY_SIZE;
     ClearTypeIcons();
@@ -350,6 +380,10 @@ static void Task_OverworldHud(u8 taskId)
             if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
                 gSprites[sOverworldHud.hpBarSpriteIds[i]].invisible = FALSE;
 
+        for (i = 0; i < 2; i++)
+            if (sOverworldHud.typeIconSpriteIds[i] != SPRITE_NONE)
+                gSprites[sOverworldHud.typeIconSpriteIds[i]].invisible = FALSE;
+
         UpdateHud();
     }
     else
@@ -374,6 +408,10 @@ static void Task_OverworldHud(u8 taskId)
         for (i = 0; i < 6; i++)
             if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
                 gSprites[sOverworldHud.hpBarSpriteIds[i]].invisible = TRUE;
+			
+        for (i = 0; i < 2; i++)
+            if (sOverworldHud.typeIconSpriteIds[i] != SPRITE_NONE)
+                gSprites[sOverworldHud.typeIconSpriteIds[i]].invisible = TRUE;
     }
 }
 	
@@ -382,8 +420,10 @@ static void CreateHudSprites(void)
     u8 i;
     LoadSpriteSheet(&sSpriteSheet_OverworldBall);
     LoadSpritePalette(&sSpritePalette_OverworldBall);
-	LoadSpriteSheets(sHpBarSpriteSheets);
+    LoadSpriteSheets(sHpBarSpriteSheets);
     LoadSpritePalette(&sHpBarSpritePalette);
+	LoadTypeIconGfx();
+    LoadSpritePalette(&sTypeIconSpritePalette);
 
     for (i = 0; i < PARTY_SIZE; i++)
         sOverworldHud.pokeballSpriteIds[i] = CreateSprite(&sSpriteTemplate_OverworldBall, i * 8 + 8, 38, 0);
@@ -413,6 +453,12 @@ static void CreateHudSprites(void)
     for (i = 0; i < 6; i++)
         sOverworldHud.hpBarSpriteIds[i] = CreateSprite(&sHpBarSpriteTemplate, 8 + i * 8, 8, 0);
 	
+    sOverworldHud.typeIconSpriteIds[0] = CreateSprite(&sTypeIconSpriteTemplate, HUD_TYPE_ICON_X, HUD_TYPE_ICON_Y, 0);
+    sOverworldHud.typeIconSpriteIds[1] = CreateSprite(&sTypeIconSpriteTemplate, HUD_TYPE_ICON_X + 32, HUD_TYPE_ICON_Y, 0);
+
+    gSprites[sOverworldHud.typeIconSpriteIds[0]].invisible = TRUE;
+    gSprites[sOverworldHud.typeIconSpriteIds[1]].invisible = TRUE;
+
     UpdatePartyBallIcons();
 }
 
@@ -434,6 +480,14 @@ static void DestroyHudSprites(void)
     for (i = 0; i < 6; i++)
         if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
             DestroySpriteAndFreeResources(&gSprites[sOverworldHud.hpBarSpriteIds[i]]);
+
+    for (i = 0; i < 2; i++)
+        if (sOverworldHud.typeIconSpriteIds[i] != SPRITE_NONE)
+            DestroySprite(&gSprites[sOverworldHud.typeIconSpriteIds[i]]);
+
+    for (i = 0; i < NUMBER_OF_MON_TYPES; i++)
+        FreeSpriteTilesByTag(TAG_HUD_TYPE_ICON_TILE_BASE + i);
+    FreeSpritePaletteByTag(TAG_HUD_TYPE_ICON_PAL);
 
     FreeSpriteTilesByTag(TAG_OW_HP_BAR_GREEN);
     FreeSpriteTilesByTag(TAG_OW_HP_BAR_YELLOW);
@@ -522,6 +576,9 @@ static void UpdateHud(void)
     for (i = 0; i < 6; i++)
         if (sOverworldHud.hpBarSpriteIds[i] != SPRITE_NONE)
             gSprites[sOverworldHud.hpBarSpriteIds[i]].invisible = FALSE;
+    for (i = 0; i < 2; i++)
+        if (sOverworldHud.typeIconSpriteIds[i] != SPRITE_NONE)
+            gSprites[sOverworldHud.typeIconSpriteIds[i]].invisible = FALSE;
 
     UpdatePartyBallIcons();
     if (sOverworldHud.activePartyIdx < PARTY_SIZE)
@@ -654,14 +711,14 @@ static s8 GetFirstViablePartyIndex(void)
 
 static void ClearTypeIcons(void)
 {
-    u16 tileBase = GetBgAttribute(0, BG_ATTR_BASETILE) + HUD_GFX_BASE_TILE;
-    FillBgTilemapBufferRect(0, tileBase + HUD_TILE_BLANK, HUD_TYPE_ICON_X, HUD_TYPE_ICON_Y, 8, 1, HUD_TYPE_ICON_PAL);
-    ScheduleBgCopyTilemapToVram(0);
+    u8 i;
+    for (i = 0; i < 2; i++)
+        if (sOverworldHud.typeIconSpriteIds[i] != SPRITE_NONE)
+            gSprites[sOverworldHud.typeIconSpriteIds[i]].invisible = TRUE;
 }
 
 static void DrawTypeIconsForMon(u8 monId)
 {
-    u16 tileBase = GetBgAttribute(0, BG_ATTR_BASETILE) + HUD_TYPE_ICON_BASE_TILE;
     u16 species = GetMonData(&gPlayerParty[monId], MON_DATA_SPECIES);
     u8 type1 = gSpeciesInfo[species].types[0];
     u8 type2 = gSpeciesInfo[species].types[1];
@@ -669,18 +726,36 @@ static void DrawTypeIconsForMon(u8 monId)
     sOverworldHud.type1 = type1;
     sOverworldHud.type2 = type2;
 
-    WriteSequenceToBgTilemapBuffer(0, tileBase + type1 * 4, HUD_TYPE_ICON_X, HUD_TYPE_ICON_Y, 4, 1, HUD_TYPE_ICON_PAL, 1);
+    if (sOverworldHud.typeIconSpriteIds[0] != SPRITE_NONE)
+    {
+        gSprites[sOverworldHud.typeIconSpriteIds[0]].oam.tileNum = GetSpriteTileStartByTag(TAG_HUD_TYPE_ICON_TILE_BASE + type1);
+        gSprites[sOverworldHud.typeIconSpriteIds[0]].invisible = FALSE;
+    }
 
     if (type2 == TYPE_NONE || type2 == type1)
     {
-        FillBgTilemapBufferRect(0, tileBase + HUD_TILE_BLANK, HUD_TYPE_ICON_X + 4, HUD_TYPE_ICON_Y, 4, 1, HUD_TYPE_ICON_PAL);
+        if (sOverworldHud.typeIconSpriteIds[1] != SPRITE_NONE)
+            gSprites[sOverworldHud.typeIconSpriteIds[1]].invisible = TRUE;
     }
-    else
+    else if (sOverworldHud.typeIconSpriteIds[1] != SPRITE_NONE)
     {
-        WriteSequenceToBgTilemapBuffer(0, tileBase + type2 * 4, HUD_TYPE_ICON_X + 4, HUD_TYPE_ICON_Y, 4, 1, HUD_TYPE_ICON_PAL, 1);
+        gSprites[sOverworldHud.typeIconSpriteIds[1]].oam.tileNum = GetSpriteTileStartByTag(TAG_HUD_TYPE_ICON_TILE_BASE + type2);
+        gSprites[sOverworldHud.typeIconSpriteIds[1]].invisible = FALSE;
     }
+}
 
-    ScheduleBgCopyTilemapToVram(0);
+static void LoadTypeIconGfx(void)
+{
+    u8 i;
+    struct SpriteSheet sheet;
+
+    sheet.size = 8 * TILE_SIZE_4BPP;
+    for (i = 0; i < NUMBER_OF_MON_TYPES; i++)
+    {
+        sheet.data = gMenuInfoElements_Gfx + sTypeIconOffsets[i] * TILE_SIZE_4BPP;
+        sheet.tag = TAG_HUD_TYPE_ICON_TILE_BASE + i;
+        LoadSpriteSheet(&sheet);
+    }
 }
 
 static bool8 ShouldShowOverworldHud(void)

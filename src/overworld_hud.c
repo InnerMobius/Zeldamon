@@ -23,7 +23,7 @@
 #include "constants/species.h"
 
 #define TAG_OVERWORLD_BALL_TILE 55062
-#define TAG_OVERWORLD_BALL_PAL  PALTAG_OVERWORLD_HUD
+#define TAG_OVERWORLD_BALL_PAL  TAG_OW_HP_BAR_PAL
 #define B_INTERFACE_GFX_BALL_PARTY_SUMMARY 66
 #define B_INTERFACE_GFX_BALL_CAUGHT 70
 #define B_INTERFACE_GFX_HP_BAR_GREEN 3
@@ -77,7 +77,6 @@ struct OverworldHud
     u8 pokeballSpriteIds[PARTY_SIZE];
     u8 itemIconSpriteId;
     u8 typeIconSpriteIds[2];
-    u8 palIndex;
     u16 registeredItemId;
     u8 activePartyIdx;
     bool8 visible;
@@ -95,7 +94,6 @@ static void UpdatePartyBallIcons(void);
 static void DrawMoney(u32 money);
 static void ClearMoneyDisplay(void);
 static void LoadTypeIconGfx(void);
-static u8 AddHudItemIconObject(u16 tilesTag, u8 palIndex, u16 itemId);
 
 // Offsets into gMenuInfoElements_Gfx for the 8-tile type icons.
 // These values correspond to the layout of graphics/interface/menu_info.png.
@@ -217,11 +215,11 @@ static const struct SpriteSheet sHpBarSpriteSheets[] = {
     {NULL, 0, 0},
 };
 
-static const struct SpritePalette sHpBarSpritePalette = {gMenuInfoElements2_Pal, PALTAG_OVERWORLD_HUD};
+static const struct SpritePalette sHpBarSpritePalette = {gBattleInterface_Healthbar_Pal, TAG_OW_HP_BAR_PAL};
 
 static const struct SpriteTemplate sHpBarSpriteTemplate = {
     .tileTag = TAG_OW_HP_BAR_GREEN,
-    .paletteTag = PALTAG_OVERWORLD_HUD,
+    .paletteTag = TAG_OW_HP_BAR_PAL,
     .oam = &sHpBarOamData,
     .anims = sHpBarAnimTable,
     .images = NULL,
@@ -251,13 +249,13 @@ static const struct SpriteSheet sSpriteSheet_OverworldBall = {
 };
 
 static const struct SpritePalette sSpritePalette_OverworldBall = {
-    gMenuInfoElements2_Pal,
-    PALTAG_OVERWORLD_HUD
+    gBattleInterface_Healthbar_Pal,
+    TAG_OVERWORLD_BALL_PAL
 };
 
 static const struct SpriteTemplate sSpriteTemplate_OverworldBall = {
     .tileTag = TAG_OVERWORLD_BALL_TILE,
-    .paletteTag = PALTAG_OVERWORLD_HUD,
+    .paletteTag = TAG_OVERWORLD_BALL_PAL,
     .oam = &sOamData_OverworldBall,
     .anims = sSpriteAnimTable_OverworldBall,
     .images = NULL,
@@ -282,12 +280,12 @@ static const union AnimCmd *const sAnimTable_TypeIcon[] = {
 
 static const struct SpritePalette sTypeIconSpritePalette = {
     gMenuInfoElements2_Pal,
-    PALTAG_OVERWORLD_HUD
+    TAG_HUD_TYPE_ICON_PAL
 };
 
 static const struct SpriteTemplate sTypeIconSpriteTemplate = {
     .tileTag = TAG_HUD_TYPE_ICON_TILE_BASE,
-    .paletteTag = PALTAG_OVERWORLD_HUD,
+    .paletteTag = TAG_HUD_TYPE_ICON_PAL,
     .oam = &sOamData_TypeIcon,
     .anims = sAnimTable_TypeIcon,
     .images = NULL,
@@ -418,19 +416,19 @@ static void Task_OverworldHud(u8 taskId)
 static void CreateHudSprites(void)
 {
     u8 i;
-    sOverworldHud.palIndex = AllocSpritePalette(PALTAG_OVERWORLD_HUD);
-    LoadPalette(gMenuInfoElements2_Pal, OBJ_PLTT_ID(sOverworldHud.palIndex), PLTT_SIZE_4BPP);
-
     LoadSpriteSheet(&sSpriteSheet_OverworldBall);
+    LoadSpritePalette(&sSpritePalette_OverworldBall);
     LoadSpriteSheets(sHpBarSpriteSheets);
-    LoadTypeIconGfx();
+    LoadSpritePalette(&sHpBarSpritePalette);
+	LoadTypeIconGfx();
+    LoadSpritePalette(&sTypeIconSpritePalette);
 
     for (i = 0; i < PARTY_SIZE; i++)
         sOverworldHud.pokeballSpriteIds[i] = CreateSprite(&sSpriteTemplate_OverworldBall, i * 8 + 8, 38, 0);
 
     if (gSaveBlock1Ptr->registeredItem != ITEM_NONE)
     {
-        sOverworldHud.itemIconSpriteId = AddHudItemIconObject(TAG_HUD_ITEM_ICON_TILE, sOverworldHud.palIndex, gSaveBlock1Ptr->registeredItem);
+        sOverworldHud.itemIconSpriteId = AddItemIconObject(TAG_HUD_ITEM_ICON_TILE, TAG_HUD_ITEM_ICON_PAL, gSaveBlock1Ptr->registeredItem);
         if (sOverworldHud.itemIconSpriteId != MAX_SPRITES)
         {
             struct Sprite *icon = &gSprites[sOverworldHud.itemIconSpriteId];
@@ -489,12 +487,13 @@ static void DestroyHudSprites(void)
 
     for (i = 0; i < NUMBER_OF_MON_TYPES; i++)
         FreeSpriteTilesByTag(TAG_HUD_TYPE_ICON_TILE_BASE + i);
+    FreeSpritePaletteByTag(TAG_HUD_TYPE_ICON_PAL);
 
     FreeSpriteTilesByTag(TAG_OW_HP_BAR_GREEN);
     FreeSpriteTilesByTag(TAG_OW_HP_BAR_YELLOW);
     FreeSpriteTilesByTag(TAG_OW_HP_BAR_RED);
     // Ensure palette slot is freed when the HUD is not in use
-    FreeSpritePaletteByTag(PALTAG_OVERWORLD_HUD);
+    FreeSpritePaletteByTag(TAG_OW_HP_BAR_PAL);
 }
 
 bool8 CanShowOverworldHud(void)
@@ -524,12 +523,13 @@ static void UpdateHud(void)
         {
             DestroySprite(&gSprites[sOverworldHud.itemIconSpriteId]);
             FreeSpriteTilesByTag(TAG_HUD_ITEM_ICON_TILE);
+            FreeSpritePaletteByTag(TAG_HUD_ITEM_ICON_PAL);
             sOverworldHud.itemIconSpriteId = SPRITE_NONE;
         }
 
         if (gSaveBlock1Ptr->registeredItem != ITEM_NONE)
         {
-            sOverworldHud.itemIconSpriteId = AddHudItemIconObject(TAG_HUD_ITEM_ICON_TILE, sOverworldHud.palIndex, gSaveBlock1Ptr->registeredItem);
+            sOverworldHud.itemIconSpriteId = AddItemIconObject(TAG_HUD_ITEM_ICON_TILE, TAG_HUD_ITEM_ICON_PAL, gSaveBlock1Ptr->registeredItem);
             if (sOverworldHud.itemIconSpriteId != MAX_SPRITES)
             {
                 struct Sprite *icon = &gSprites[sOverworldHud.itemIconSpriteId];
@@ -767,47 +767,7 @@ static void LoadTypeIconGfx(void)
         LoadSpriteSheet(&sheet);
     }
 
-Free(buffer);
-}
-
-static u8 AddHudItemIconObject(u16 tilesTag, u8 palIndex, u16 itemId)
-{
-    struct SpriteTemplate template;
-    struct SpriteSheet spriteSheet;
-    void *tilesBuffer;
-    void *tilesBufferPadded;
-    u8 spriteId;
-
-    tilesBuffer = Alloc(0x120);
-    if (tilesBuffer == NULL)
-        return MAX_SPRITES;
-
-    tilesBufferPadded = AllocZeroed(0x200);
-    if (tilesBufferPadded == NULL)
-    {
-        Free(tilesBuffer);
-        return MAX_SPRITES;
-    }
-
-    LZDecompressWram(GetItemIconGfxPtr(itemId, ITEMICON_TILES), tilesBuffer);
-    CopyItemIconPicTo4x4Buffer(tilesBuffer, tilesBufferPadded);
-
-    spriteSheet.data = tilesBufferPadded;
-    spriteSheet.size = 0x200;
-    spriteSheet.tag = tilesTag;
-    LoadSpriteSheet(&spriteSheet);
-
-    CpuCopy16(&sSpriteTemplate_ItemIcon, &template, sizeof(struct SpriteTemplate));
-    template.tileTag = tilesTag;
-    template.paletteTag = PALTAG_OVERWORLD_HUD;
-
-    spriteId = CreateSprite(&template, 0, 0, 0);
-    if (spriteId != MAX_SPRITES)
-        gSprites[spriteId].oam.paletteNum = palIndex;
-
-    Free(tilesBuffer);
-    Free(tilesBufferPadded);
-    return spriteId;
+    Free(buffer);
 }
 
 static bool8 ShouldShowOverworldHud(void)

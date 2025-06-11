@@ -881,10 +881,10 @@ static u8 IsWeatherFadingIn(void)
         return 0;
 }
 
-void LoadCustomWeatherSpritePalette(const u16 *palette)
+void LoadCustomWeatherSpritePalette(const struct SpritePalette *palette)
 {
-    LoadPalette(palette, OBJ_PLTT_ID(gWeatherPtr->weatherPicSpritePalIndex), PLTT_SIZE_4BPP);
-    UpdateSpritePaletteWithWeather(gWeatherPtr->weatherPicSpritePalIndex);
+    LoadSpritePalette(palette);
+    UpdateSpritePaletteWithWeather(IndexOfSpritePaletteTag(palette->tag));
 }
 
 static void LoadDroughtWeatherPalette(u8 *gammaIndexPtr, u8 *a1)
@@ -1130,6 +1130,13 @@ void PreservePaletteInWeather(u8 preservedPalIndex)
 void ResetPreservedPalettesInWeather(void)
 {
     sPaletteGammaTypes = sBasePaletteGammaTypes;
+}
+
+void UpdatePaletteGammaType(u8 index, u8 gammaType)
+{
+    CpuCopy16(sBasePaletteGammaTypes, sFieldEffectPaletteGammaTypes, 32);
+    sFieldEffectPaletteGammaTypes[index] = gammaType;
+    sPaletteGammaTypes = sFieldEffectPaletteGammaTypes;
 }
 
 void SlightlyDarkenPalsInWeather(u16 *palbuf, u16 *unused, u32 size)

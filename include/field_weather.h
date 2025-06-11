@@ -18,6 +18,12 @@ enum {
     PALTAG_WEATHER = TAG_WEATHER_START,
 };
 
+enum {
+    GAMMA_NONE,
+    GAMMA_NORMAL,
+    GAMMA_ALT,
+};
+
 struct Weather
 {
     union
@@ -142,13 +148,14 @@ void delay(u8, u8, u32);
 void UpdateSpritePaletteWithWeather(u8 palIdx);
 void ResetPreservedPalettesInWeather(void);
 void PreservePaletteInWeather(u8 palIdx);
+void UpdatePaletteGammaType(u8 index, u8 gammaType);
 
 void SetNextWeather(u8 weather);
 void SetCurrentAndNextWeather(u8 weather);
 void Weather_SetBlendCoeffs(u8 eva, u8 evb);
 void Weather_SetTargetBlendCoeffs(u8 eva, u8 evb, int delay);
 bool8 Weather_UpdateBlend(void);
-void LoadCustomWeatherSpritePalette(const u16 *palette);
+void LoadCustomWeatherSpritePalette(const struct SpritePalette *palette);
 void ResetDroughtWeatherPaletteLoading(void);
 bool8 LoadDroughtWeatherPalettes(void);
 void DroughtStateInit(void);

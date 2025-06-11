@@ -32,6 +32,10 @@ static const struct SpriteSheet sCloudSpriteSheet = {
     .size = 0x0800,
     .tag = GFXTAG_CLOUD
 };
+static const struct SpritePalette sCloudSpritePalette = {
+    .data = gCloudsWeatherPalette,
+    .tag = PALTAG_WEATHER,
+};
 
 static const struct OamData sCloudSpriteOamData = {
     .y = 0,
@@ -156,7 +160,7 @@ static void CreateCloudSprites(void)
         return;
 
     LoadSpriteSheet(&sCloudSpriteSheet);
-    LoadCustomWeatherSpritePalette(gCloudsWeatherPalette);
+    LoadCustomWeatherSpritePalette(&sCloudSpritePalette);
     for (i = 0; i < NUM_CLOUD_SPRITES; i++)
     {
         spriteId = CreateSprite(&sCloudSpriteTemplate, 0, 0, 0xFF);
@@ -2041,6 +2045,10 @@ static const struct SpriteSheet sSandstormSpriteSheet = {
     .size = 0x0a00,
     .tag = GFXTAG_SANDSTORM,
 };
+static const struct SpritePalette sSandstormSpritePalette = {
+    .data = gSandstormWeatherPalette,
+    .tag = PALTAG_WEATHER,
+};
 
 // Regular sandstorm sprites
 #define tSpriteColumn  data[0]
@@ -2060,7 +2068,7 @@ static void CreateSandstormSprites(void)
     if (!gWeatherPtr->sandstormSpritesCreated)
     {
         LoadSpriteSheet(&sSandstormSpriteSheet);
-        LoadCustomWeatherSpritePalette(gSandstormWeatherPalette);
+        LoadCustomWeatherSpritePalette(&sSandstormSpritePalette);
         for (i = 0; i < NUM_SANDSTORM_SPRITES; i++)
         {
             spriteId = CreateSpriteAtEnd(&sSandstormSpriteTemplate, 0, (i / 5) * 64, 1);

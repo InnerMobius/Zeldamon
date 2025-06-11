@@ -7,6 +7,7 @@
 #include "money.h"
 #include "item_menu_icons.h"
 #include "graphics.h"
+#include "new_menu_helpers.h"
 #include "overworld.h"
 #include "field_message_box.h"
 #include "quest_log.h"
@@ -243,7 +244,7 @@ void CreateOverworldHud(void)
         DestroyHudSprites();
         CreateHudSprites();
 		LoadPalette(gBattleInterface_Healthbox_Pal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
-        LoadBgTiles(0, gOverworldHudElements_Gfx, sizeof(gOverworldHudElements_Gfx), HUD_GFX_BASE_TILE);
+        LoadBgTiles(0, gOverworldHudElements_Gfx, 0x2C0, HUD_GFX_BASE_TILE);
         return;
     }
 
@@ -254,7 +255,7 @@ void CreateOverworldHud(void)
     FillWindowPixelBuffer(sOverworldHud.buttonWindowId, PIXEL_FILL(0));
 	
 	LoadPalette(gBattleInterface_Healthbox_Pal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
-    LoadBgTiles(0, gOverworldHudElements_Gfx, sizeof(gOverworldHudElements_Gfx), HUD_GFX_BASE_TILE);
+    LoadBgTiles(0, gOverworldHudElements_Gfx, 0x2C0, HUD_GFX_BASE_TILE);
 
     sOverworldHud.taskId = CreateTask(Task_OverworldHud, 80);
         sOverworldHud.visible = TRUE;

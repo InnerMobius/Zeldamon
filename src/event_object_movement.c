@@ -6,6 +6,7 @@
 #include "field_control_avatar.h"
 #include "field_effect.h"
 #include "field_effect_helpers.h"
+#include "field_weather.h"
 #include "field_player_avatar.h"
 #include "fieldmap.h"
 #include "metatile_behavior.h"
@@ -77,6 +78,8 @@ static void SetPlayerAvatarObjectEventIdAndObjectId(u8, u8);
 static void ResetObjectEventFldEffData(struct ObjectEvent *);
 static u8 TryLoadObjectPalette(const struct SpritePalette *spritePalette);
 static u8 FindObjectEventPaletteIndexByTag(u16);
+static void FreeSpritePaletteIfUnused(u8 paletteNum);
+static void AllocObjectEventPalette(struct ObjectEvent *objectEvent, const struct ObjectEventGraphicsInfo *graphicsInfo);
 static bool8 ObjectEventDoesElevationMatch(struct ObjectEvent *, u8);
 static bool8 IsElevationMismatchAt(u8 elevation, s16 x, s16 y);
 static bool8 AreElevationsCompatible(u8 a, u8 b);

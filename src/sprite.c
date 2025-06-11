@@ -1646,6 +1646,29 @@ void FreeSpritePaletteByTag(u16 tag)
         sSpritePaletteTags[index] = TAG_NONE;
 }
 
+void FreeSpritePaletteIfUnused(u16 tag)
+{
+    u8 i;
+    u8 paletteNum = IndexOfSpritePaletteTag(tag);
+
+    if (paletteNum == 0xFF)
+        return;
+
+    for (i = 0; i < MAX_SPRITES; i++)
+    {
+        if (!gSprites[i].inUse)
+            continue;
+
+        if (gSprites[i].template && gSprites[i].template->paletteTag == tag)
+            return;
+
+        if (gSprites[i].oam.paletteNum == paletteNum)
+            return;
+    }
+
+    FreeSpritePaletteByTag(tag);
+}
+
 void SetSubspriteTables(struct Sprite *sprite, const struct SubspriteTable *subspriteTables)
 {
     sprite->subspriteTables = subspriteTables;

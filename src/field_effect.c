@@ -54,7 +54,6 @@ static void FieldEffectScript_LoadFadedPal(const u8 **script);
 static void FieldEffectScript_LoadPal(const u8 **script);
 static void FieldEffectScript_CallNative(const u8 **script, u32 *result);
 static void FieldEffectFreeTilesIfUnused(u16 tilesTag);
-static void FieldEffectFreePaletteIfUnused(u8 paletteNum);
 static void Task_PokecenterHeal(u8 taskId);
 static void SpriteCB_PokeballGlow(struct Sprite *sprite);
 static void SpriteCB_PokecenterMonitor(struct Sprite *sprite);
@@ -489,9 +488,10 @@ static void FieldEffectFreeGraphicsResources(struct Sprite *sprite)
 {
     u16 tileStart = sprite->sheetTileStart;
     u8 paletteNum = sprite->oam.paletteNum;
+    u16 paletteTag = GetSpritePaletteTagByPaletteNum(paletteNum);
     DestroySprite(sprite);
     FieldEffectFreeTilesIfUnused(tileStart);
-    FieldEffectFreePaletteIfUnused(paletteNum);
+    FreeSpritePaletteIfUnused(paletteTag);
 }
 
 void FieldEffectStop(struct Sprite *sprite, u8 fldeff)
@@ -512,20 +512,6 @@ static void FieldEffectFreeTilesIfUnused(u16 tileStart)
             return;
     }
     FreeSpriteTilesByTag(tileTag);
-}
-
-static void FieldEffectFreePaletteIfUnused(u8 paletteNum)
-{
-    u8 i;
-    u16 paletteTag = GetSpritePaletteTagByPaletteNum(paletteNum);
-    if (paletteTag == TAG_NONE)
-        return;
-    for (i = 0; i < MAX_SPRITES; i++)
-    {
-        if (gSprites[i].inUse && gSprites[i].oam.paletteNum == paletteNum)
-            return;
-    }
-    FreeSpritePaletteByTag(paletteTag);
 }
 
 void FieldEffectActiveListClear(void)

@@ -309,6 +309,7 @@ u8 AllocSpritePalette(u16 tag);
 u8 IndexOfSpritePaletteTag(u16 tag);
 u16 GetSpritePaletteTagByPaletteNum(u8 paletteNum);
 void FreeSpritePaletteByTag(u16 tag);
+void FreeSpritePaletteIfUnused(u16 tag);
 void SetSubspriteTables(struct Sprite *sprite, const struct SubspriteTable *subspriteTables);
 bool8 AddSpriteToOamBuffer(struct Sprite *object, u8 *oamIndex);
 bool8 AddSubspritesToOamBuffer(struct Sprite *sprite, struct OamData *destOam, u8 *oamIndex);

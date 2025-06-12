@@ -463,7 +463,9 @@ static void FieldEffectScript_LoadFadedPal(const u8 **script)
     LoadSpritePalette(spritePalette);
     if (idx == 0xFF)
         ApplyGlobalFieldPaletteTint(IndexOfSpritePaletteTag(spritePalette->tag));
-    UpdateSpritePaletteWithWeather(IndexOfSpritePaletteTag(spritePalette->tag));
+    idx = IndexOfSpritePaletteTag(spritePalette->tag);
+    UpdatePaletteGammaType(idx + 16, GAMMA_NORMAL);
+    UpdateSpritePaletteWithWeather(idx);
     *script += sizeof(u32);
 }
 
@@ -474,6 +476,8 @@ static void FieldEffectScript_LoadPal(const u8 **script)
     LoadSpritePalette(spritePalette);
     if (idx != 0xFF)
         ApplyGlobalFieldPaletteTint(IndexOfSpritePaletteTag(spritePalette->tag));
+    idx = IndexOfSpritePaletteTag(spritePalette->tag);
+    UpdatePaletteGammaType(idx + 16, GAMMA_NORMAL);
     *script += sizeof(u32);
 }
 

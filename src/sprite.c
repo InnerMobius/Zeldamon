@@ -1,5 +1,6 @@
 #include "global.h"
 #include "gflib.h"
+#include "field_weather.h"
 
 #define MAX_SPRITE_COPY_REQUESTS 64
 
@@ -1573,7 +1574,10 @@ void FreeAllSpritePalettes(void)
     u8 i;
     gReservedSpritePaletteCount = 0;
     for (i = 0; i < ARRAY_COUNT(sSpritePaletteTags); i++)
+    {
         sSpritePaletteTags[i] = TAG_NONE;
+        UpdatePaletteGammaType(i + 16, GAMMA_NONE);
+    }
 }
 
 u8 LoadSpritePalette(const struct SpritePalette *palette)
@@ -1643,7 +1647,10 @@ void FreeSpritePaletteByTag(u16 tag)
 {
     u8 index = IndexOfSpritePaletteTag(tag);
     if (index != 0xFF)
+    {
         sSpritePaletteTags[index] = TAG_NONE;
+        UpdatePaletteGammaType(index + 16, GAMMA_NONE);
+    }
 }
 
 void FreeSpritePaletteIfUnused(u16 tag)

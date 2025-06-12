@@ -676,6 +676,21 @@ static const u16 *const gObjectPaletteTagSets[] = {
     sObjectPaletteTags3,
 };
 
+static const u8 sObjectPaletteGammaTypes[OBJ_PALSLOT_COUNT] = {
+    [PALSLOT_PLAYER]                = GAMMA_ALT,
+    [PALSLOT_PLAYER_REFLECTION]     = GAMMA_NORMAL,
+    [PALSLOT_NPC_1]                 = GAMMA_ALT,
+    [PALSLOT_NPC_2]                 = GAMMA_ALT,
+    [PALSLOT_NPC_3]                 = GAMMA_ALT,
+    [PALSLOT_NPC_4]                 = GAMMA_ALT,
+    [PALSLOT_NPC_1_REFLECTION]      = GAMMA_NORMAL,
+    [PALSLOT_NPC_2_REFLECTION]      = GAMMA_NORMAL,
+    [PALSLOT_NPC_3_REFLECTION]      = GAMMA_NORMAL,
+    [PALSLOT_NPC_4_REFLECTION]      = GAMMA_NORMAL,
+    [PALSLOT_NPC_SPECIAL]           = GAMMA_ALT,
+    [PALSLOT_NPC_SPECIAL_REFLECTION]= GAMMA_NORMAL,
+};
+
 //#include "data/object_events/berry_tree_graphics_tables.h"
 #include "data/field_effects/field_effect_objects.h"
 
@@ -2166,12 +2181,19 @@ void LoadObjectEventPaletteSet(u16 *paletteTags)
 
 static u8 TryLoadObjectPalette(const struct SpritePalette *spritePalette)
 {
+    u8 index;
+
     if (IndexOfSpritePaletteTag(spritePalette->tag) != 0xFF)
     {
         // Already loaded
         return 0xFF;
     }
-    return LoadSpritePalette(spritePalette);
+
+    index = LoadSpritePalette(spritePalette);
+    if (index != 0xFF)
+        UpdatePaletteGammaType(index + 16, GAMMA_NORMAL);
+
+    return index;
 }
 
 void PatchObjectPalette(u16 paletteTag, u8 paletteSlot)
@@ -2180,6 +2202,7 @@ void PatchObjectPalette(u16 paletteTag, u8 paletteSlot)
 
     LoadPalette(sObjectEventSpritePalettes[paletteIndex].data, OBJ_PLTT_ID(paletteSlot), PLTT_SIZE_4BPP);
     ApplyGlobalFieldPaletteTint(paletteSlot);
+    UpdatePaletteGammaType(paletteSlot + 16, sObjectPaletteGammaTypes[paletteSlot]);
 }
 
 void PatchObjectPaletteRange(const u16 *paletteTags, u8 minSlot, u8 maxSlot)

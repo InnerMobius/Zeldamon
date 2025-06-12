@@ -42,4 +42,7 @@ void UpdateSandPileFieldEffect(struct Sprite *sprite);
 void UpdateDisguiseFieldEffect(struct Sprite *sprite);
 void UpdateHotSpringsWaterFieldEffect(struct Sprite *sprite);
 
+u8 CreateSpriteWithPlayerPalette(const struct SpriteTemplate *template, s16 x, s16 y, u8 subpriority);
+u8 CreateSpriteAtEndWithPlayerPalette(const struct SpriteTemplate *template, s16 x, s16 y, u8 subpriority);
+
 #endif //GUARD_FIELD_EFFECT_HELPERS_H

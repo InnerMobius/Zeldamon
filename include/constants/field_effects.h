@@ -78,6 +78,8 @@
 #define FLDEFF_PAL_TAG_ASH                0x100D
 #define FLDEFF_PAL_TAG_SMALL_SPARKLE      0x100F
 
+#define SPRITE_PLAYER_TAG                 0x11FE
+
 #define FLDEFFOBJ_SHADOW_S                  0
 #define FLDEFFOBJ_SHADOW_M                  1
 #define FLDEFFOBJ_SHADOW_L                  2

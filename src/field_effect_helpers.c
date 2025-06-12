@@ -13,6 +13,30 @@
 
 #define OBJ_EVENT_PAL_TAG_NONE 0x11FF // duplicate of define in event_object_movement.c
 
+#define PAL_TAG_PLAYER_MALE   0x1100
+#define PAL_TAG_PLAYER_FEMALE 0x1110
+
+static u16 GetPlayerSpritePaletteTag(void)
+{
+    return gSaveBlock2Ptr->playerGender == MALE ? PAL_TAG_PLAYER_MALE : PAL_TAG_PLAYER_FEMALE;
+}
+
+u8 CreateSpriteWithPlayerPalette(const struct SpriteTemplate *template, s16 x, s16 y, u8 subpriority)
+{
+    struct SpriteTemplate temp = *template;
+    if (temp.paletteTag == SPRITE_PLAYER_TAG)
+        temp.paletteTag = GetPlayerSpritePaletteTag();
+    return CreateSprite(&temp, x, y, subpriority);
+}
+
+u8 CreateSpriteAtEndWithPlayerPalette(const struct SpriteTemplate *template, s16 x, s16 y, u8 subpriority)
+{
+    struct SpriteTemplate temp = *template;
+    if (temp.paletteTag == SPRITE_PLAYER_TAG)
+        temp.paletteTag = GetPlayerSpritePaletteTag();
+    return CreateSpriteAtEnd(&temp, x, y, subpriority);
+}
+
 static void UpdateObjectReflectionSprite(struct Sprite *sprite);
 static void LoadObjectReflectionPalette(struct ObjectEvent * objectEvent, struct Sprite *sprite);
 static void LoadObjectHighBridgeReflectionPalette(struct ObjectEvent * objectEvent, u8 paletteNum);
@@ -947,12 +971,11 @@ u32 FldEff_SurfBlob(void)
     struct Sprite *sprite;
 
     SetSpritePosToOffsetMapCoords((s16 *)&gFieldEffectArguments[0], (s16 *)&gFieldEffectArguments[1], 8, 8);
-    spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_SURF_BLOB], gFieldEffectArguments[0], gFieldEffectArguments[1], 0x96);
+    spriteId = CreateSpriteAtEndWithPlayerPalette(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_SURF_BLOB], gFieldEffectArguments[0], gFieldEffectArguments[1], 0x96);
     if (spriteId != MAX_SPRITES)
     {
         sprite = &gSprites[spriteId];
         sprite->coordOffsetEnabled = TRUE;
-        sprite->oam.paletteNum = 0;
         sprite->sPlayerObjectId = gFieldEffectArguments[2];
         sprite->sBobDirection = 0;
         sprite->data[6] = -1;
